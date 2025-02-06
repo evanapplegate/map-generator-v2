@@ -3,46 +3,10 @@ import MapForm from "@/components/MapGenerator/MapForm";
 import MapVisualization from "@/components/MapGenerator/MapVisualization";
 import { MapRequest, MapData } from "@/lib/types";
 import { processExcelFile } from "@/lib/mapUtils";
+import { generateMapInstructions } from "@/lib/llmMapGenerator";
 import { useToast } from "@/components/ui/use-toast";
 import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
-
-const parseSimpleMapRequest = (description: string): MapData => {
-  console.log('Index - Parsing simple map request:', description);
-  
-  // Extract state codes (2 letter codes)
-  const stateMatches: string[] = description.match(/\b[A-Z]{2}\b/g) || [];
-  console.log('Index - Matched state codes:', stateMatches);
-  
-  // Only create state data for matched states
-  const states = stateMatches.map(code => {
-    const stateNames: Record<string, string> = {
-      'CA': 'California',
-      'NY': 'New York',
-      'TX': 'Texas',
-      'CT': 'Connecticut',
-      'MT': 'Montana'
-    };
-    
-    const stateName = stateNames[code] || code;
-    console.log('Index - Creating state data for:', { code, name: stateName });
-    
-    return {
-      state: stateName,
-      postalCode: code,
-      sales: 100 // Will be colored blue
-    };
-  });
-
-  const mapData = {
-    states,
-    maxSales: 100,
-    minSales: 0
-  };
-  
-  console.log('Index - Final map data:', mapData);
-  return mapData;
-};
 
 const Index = () => {
   const [mapData, setMapData] = useState<MapData | null>(null);
@@ -51,6 +15,7 @@ const Index = () => {
   const handleMapRequest = async (request: MapRequest) => {
     try {
       console.log('Handling map request:', request);
+      
       if (request.file) {
         // Handle data-driven map
         console.log('Processing file-based request');
@@ -64,10 +29,25 @@ const Index = () => {
         };
         console.log('Setting new map data:', newMapData);
         setMapData(newMapData);
+      } else if (request.apiKey) {
+        // Use LLM to interpret the request
+        console.log('Using LLM to interpret request');
+        const llmMapData = await generateMapInstructions(request.description, request.apiKey);
+        console.log('Setting LLM-generated map data:', llmMapData);
+        setMapData(llmMapData);
       } else {
-        // Handle simple text-based map
-        console.log('Processing text-based request');
-        const simpleMapData = parseSimpleMapRequest(request.description);
+        // Fallback to simple parsing
+        console.log('Using simple parser (no API key provided)');
+        const states = request.description.match(/\b[A-Z]{2}\b/g) || [];
+        const simpleMapData = {
+          states: states.map(code => ({
+            state: code,
+            postalCode: code,
+            sales: 100
+          })),
+          maxSales: 100,
+          minSales: 0
+        };
         console.log('Setting simple map data:', simpleMapData);
         setMapData(simpleMapData);
       }
@@ -80,7 +60,7 @@ const Index = () => {
       console.error('Error handling map request:', error);
       toast({
         title: "Error",
-        description: "Failed to process request",
+        description: error instanceof Error ? error.message : "Failed to process request",
         variant: "destructive",
       });
     }
@@ -147,4 +127,3 @@ const Index = () => {
 };
 
 export default Index;
-
