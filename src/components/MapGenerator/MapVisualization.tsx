@@ -133,14 +133,26 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           });
           return color;
         })
-        .attr("stroke", "none"); // Remove stroke
+        .attr("stroke", (d: any) => {
+          const geoName = d.properties?.NAME || d.properties?.name;
+          const regionData = data.states.find(s => {
+            if (!s.state || !geoName) return false;
+            return isUSMap 
+              ? s.state === d.properties.name
+              : s.state.toLowerCase() === geoName.toLowerCase();
+          });
+          // Only add stroke if there's no fill (no data)
+          return regionData ? "none" : "white";
+        })
+        .attr("stroke-width", "0.5px");
 
-      // Draw bounds without stroke
+      // Draw bounds with white 1px stroke
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", "none"); // Remove stroke from bounds
+        .attr("stroke", "white")
+        .attr("stroke-width", "1px");
 
       // Add tooltips
       const tooltip = d3.select("body")
