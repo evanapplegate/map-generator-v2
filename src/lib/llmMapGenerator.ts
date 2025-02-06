@@ -18,12 +18,12 @@ ${variations[variationIndex]}
 The JSON must follow this exact format:
 {
   "states": [
-    { "state": "stateName", "postalCode": "stateCode" }
+    { "state": "stateName", "postalCode": "code" }
   ],
   "defaultFill": "#hexColor",
   "highlightColors": {
-    "stateCode": "#hexColor",
-    "stateCode2": "#hexColor"
+    "code": "#hexColor",
+    "code2": "#hexColor"
   },
   "borderColor": "#hexColor"
 }`;
@@ -35,6 +35,9 @@ const validateResponse = async (jsonResponse: any, userRequest: string, apiKey: 
     dangerouslyAllowBrowser: true
   });
 
+  const isWorldMap = userRequest.toLowerCase().includes('world') || 
+                    /\b(countries|country)\b/i.test(userRequest);
+
   const validationPrompt = `You are a data validation expert. Compare this JSON response with the GeoJSON fields and the original user request.
 Original request: "${userRequest}"
 
@@ -42,9 +45,9 @@ JSON response:
 ${JSON.stringify(jsonResponse, null, 2)}
 
 Check if:
-1. All state codes in highlightColors match valid US state postal codes
+1. ${isWorldMap ? 'All country codes match ISO 3166-1 alpha-3 format' : 'All state codes in highlightColors match valid US state postal codes'}
 2. All colors are valid hex codes
-3. All requested states from the user's description are included
+3. All requested ${isWorldMap ? 'countries' : 'states'} from the user's description are included
 4. The color scheme matches what was requested
 
 Respond with ONLY a JSON object in this format:
