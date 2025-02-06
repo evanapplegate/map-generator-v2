@@ -14,8 +14,8 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
         
         // Map the Excel columns to our expected format
         const stateData: StateData[] = jsonData.map((row: any) => ({
-          state: row.NAME || row.country || row.state,
-          postalCode: row.NAME || row.country_code || row.state,
+          state: row.COUNTRY || row.NAME || row.country || row.state,
+          postalCode: row.COUNTRY || row.NAME || row.country_code || row.state,
           sales: parseFloat(row.gdp_per_capita || row.gdp || row.sales) || 0
         }));
         

@@ -6,9 +6,10 @@ import { getColorScale, formatSalesNumber } from '@/lib/mapUtils';
 
 interface MapVisualizationProps {
   data: MapData | null;
+  detailLevel?: string;
 }
 
-const MapVisualization = ({ data }: MapVisualizationProps) => {
+const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -33,8 +34,8 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     const path = d3.geoPath().projection(projection);
     const colorScale = getColorScale(data.minSales, data.maxSales);
 
-    // Load world GeoJSON data
-    d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+    // Load world GeoJSON data based on detail level
+    d3.json(`https://cdn.jsdelivr.net/npm/world-atlas@2/countries-${detailLevel}.json`)
       .then((world: any) => {
         const countries = topojson.feature(world, world.objects.countries);
         
@@ -90,7 +91,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     return () => {
       d3.select("body").selectAll(".tooltip").remove();
     };
-  }, [data]);
+  }, [data, detailLevel]);
 
   return (
     <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
