@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { MapData } from '@/lib/types';
-import { formatSalesNumber } from '@/lib/mapUtils';
 
 interface MapVisualizationProps {
   data: MapData | null;
@@ -74,7 +73,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             return match;
           });
           
-          return regionData ? "#ef4444" : "#f3f3f3"; // Red for highlighted states, light gray for others
+          return regionData ? "#3b82f6" : "#333333"; // Blue for highlighted states, dark gray for others
         })
         .attr("stroke", "white")
         .attr("stroke-width", "0.5px");
