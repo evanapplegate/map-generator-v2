@@ -87,22 +87,46 @@ const Index = () => {
     // Clone the SVG to avoid modifying the displayed one
     const clonedSvg = svgElement.cloneNode(true) as SVGElement;
     
-    // Set explicit dimensions
+    // Set explicit dimensions and viewBox
     clonedSvg.setAttribute('width', '1200');
     clonedSvg.setAttribute('height', '800');
+    clonedSvg.setAttribute('viewBox', '0 0 960 600');
     
-    // Ensure all styles are inlined
-    const computedStyle = window.getComputedStyle(svgElement);
-    clonedSvg.style.backgroundColor = computedStyle.backgroundColor;
+    // Clean up any invalid attributes
+    clonedSvg.removeAttribute('style');
+    Array.from(clonedSvg.querySelectorAll('*')).forEach(element => {
+      if (element instanceof SVGElement) {
+        // Remove empty transforms and undefined classes
+        if (element.getAttribute('transform') === '') {
+          element.removeAttribute('transform');
+        }
+        if (element.getAttribute('class') === '') {
+          element.removeAttribute('class');
+        }
+      }
+    });
     
-    // Add XML declaration and SVG namespace
-    const svgData = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' +
-      '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
-      new XMLSerializer().serializeToString(clonedSvg)
-        .replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"');
+    // Ensure proper SVG structure with all required namespaces
+    const svgData = [
+      '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
+      '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">',
+      '<svg',
+      ' version="1.1"',
+      ' xmlns="http://www.w3.org/2000/svg"',
+      ' xmlns:xlink="http://www.w3.org/1999/xlink"',
+      ' xmlns:ev="http://www.w3.org/2001/xml-events"',
+      ` width="${clonedSvg.getAttribute('width')}"`,
+      ` height="${clonedSvg.getAttribute('height')}"`,
+      ` viewBox="${clonedSvg.getAttribute('viewBox')}"`,
+      '>',
+      clonedSvg.innerHTML,
+      '</svg>'
+    ].join('\n');
 
     // Create blob with proper SVG MIME type
-    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const blob = new Blob([svgData], { 
+      type: 'image/svg+xml;charset=utf-8'
+    });
     
     // Check SVG data size
     if (blob.size < 1024) {
