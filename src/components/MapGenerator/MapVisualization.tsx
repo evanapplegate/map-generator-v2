@@ -60,8 +60,8 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("fill", (d: any) => {
           const regionData = data.states.find(s => 
             isUSMap 
-              ? s.state === d.properties.name
-              : s.postalCode === d.properties.ISO_A2
+              ? s.state === d.properties?.name
+              : s.postalCode === (d.properties?.ISO_A2 || d.properties?.name)
           );
           return regionData ? colorScale(regionData.sales) : "#eee";
         })
@@ -91,8 +91,8 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .on("mouseover", (event, d: any) => {
           const regionData = data.states.find(s => 
             isUSMap 
-              ? s.state === d.properties.name
-              : s.postalCode === d.properties.ISO_A2
+              ? s.state === d.properties?.name
+              : s.postalCode === (d.properties?.ISO_A2 || d.properties?.name)
           );
           if (regionData) {
             tooltip
