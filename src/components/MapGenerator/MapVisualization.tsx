@@ -37,7 +37,7 @@ const fuzzyMatchCountry = async (userInput: string, geoFeature: any): Promise<{ 
     - "Australia" matches with "Australia"`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",  // Changed from gpt-4o to gpt-4
       messages: [
         { role: "system", content: "You are a geography expert. Respond only with the JSON object as specified." },
         { role: "user", content: prompt }
