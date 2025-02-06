@@ -16,6 +16,9 @@ const FileUpload = ({ onFileSelect }: FileUploadProps) => {
   return (
     <div className="space-y-2">
       <Label htmlFor="file-upload">Upload Data File (Excel/CSV)</Label>
+      <div className="text-sm text-muted-foreground mb-2">
+        Ensure your data has a <code className="bg-muted px-1 py-0.5 rounded">COUNTRY</code> column for country names
+      </div>
       <Input
         id="file-upload"
         type="file"
