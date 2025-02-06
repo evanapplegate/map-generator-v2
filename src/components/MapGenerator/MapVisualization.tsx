@@ -28,7 +28,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    const isUSMap = data.states.some(s => s.postalCode?.length === 2);
+    // Check if any state name matches a US state name pattern
+    const usStatePattern = /^(Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming)$/i;
+    
+    const isUSMap = data.states.some(s => usStatePattern.test(s.state));
     console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
     console.log('Data states:', data.states);
 
