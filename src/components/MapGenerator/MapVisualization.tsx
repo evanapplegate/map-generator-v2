@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import * as topojson from 'topojson-client';
 import { MapData } from '@/lib/types';
 import { getColorScale, formatSalesNumber } from '@/lib/mapUtils';
 
@@ -26,46 +25,30 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    const projection = d3.geoAlbersUsa()
-      .scale(1300)
+    const projection = d3.geoEqualEarth()
+      .scale(180)
       .translate([width / 2, height / 2]);
 
     const path = d3.geoPath().projection(projection);
     const colorScale = getColorScale(data.minSales, data.maxSales);
 
-    // Load US states TopoJSON data
-    d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json")
-      .then((us: any) => {
-        const states = topojson.feature(us, us.objects.states).features;
+    // Load world GeoJSON data
+    d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+      .then((world: any) => {
+        const countries = d3.geoFeature(world, world.objects.countries).features;
         
         // Create map
         svg.append("g")
           .selectAll("path")
-          .data(states)
+          .data(countries)
           .join("path")
           .attr("d", path)
           .attr("fill", (d: any) => {
-            const stateData = data.states.find(s => s.state === d.properties.name);
-            return stateData ? colorScale(stateData.sales) : "#eee";
+            const countryData = data.states.find(s => s.state === d.properties.name);
+            return countryData ? colorScale(countryData.sales) : "#eee";
           })
           .attr("stroke", "white")
-          .attr("stroke-width", "1px");
-
-        // Add postal codes
-        svg.append("g")
-          .selectAll("text")
-          .data(states)
-          .join("text")
-          .attr("transform", (d: any) => `translate(${path.centroid(d)})`)
-          .attr("dy", ".35em")
-          .attr("text-anchor", "middle")
-          .style("font-size", "12px")
-          .style("font-weight", "bold")
-          .style("fill", "black")
-          .text((d: any) => {
-            const stateData = data.states.find(s => s.state === d.properties.name);
-            return stateData?.postalCode || '';
-          });
+          .attr("stroke-width", "0.5px");
 
         // Add tooltips
         const tooltip = d3.select("body")
@@ -80,13 +63,13 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
         svg.selectAll("path")
           .on("mouseover", (event, d: any) => {
-            const stateData = data.states.find(s => s.state === d.properties.name);
-            if (stateData) {
+            const countryData = data.states.find(s => s.state === d.properties.name);
+            if (countryData) {
               tooltip
                 .style("visibility", "visible")
                 .html(`
-                  <strong>${stateData.state}</strong><br/>
-                  Sales: ${formatSalesNumber(stateData.sales)}
+                  <strong>${countryData.state}</strong><br/>
+                  GDP: ${formatSalesNumber(countryData.sales)}
                 `);
             }
           })
@@ -98,6 +81,9 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           .on("mouseout", () => {
             tooltip.style("visibility", "hidden");
           });
+      })
+      .catch(error => {
+        console.error('Error loading world map data:', error);
       });
 
     return () => {

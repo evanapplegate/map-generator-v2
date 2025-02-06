@@ -12,16 +12,23 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = utils.sheet_to_json(worksheet);
         
+        // Expect columns: country (or state), gdp (or sales)
         const stateData: StateData[] = jsonData.map((row: any) => ({
-          state: row.state,
-          postalCode: row.state.toUpperCase(),
-          sales: parseFloat(row.sales) || 0
+          state: row.country || row.state,
+          postalCode: row.country_code || row.state,
+          sales: parseFloat(row.gdp || row.sales) || 0
         }));
         
+        console.log('Processed Excel data:', stateData);
         resolve(stateData);
       } catch (error) {
+        console.error('Error processing Excel file:', error);
         reject(error);
       }
+    };
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      reject(error);
     };
     reader.readAsArrayBuffer(file);
   });
@@ -30,7 +37,7 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
 export const getColorScale = (minSales: number, maxSales: number) => {
   return d3.scaleLinear<string>()
     .domain([minSales, maxSales])
-    .range(['#FFDEE2', '#ea384c']);
+    .range(['#90EE90', '#006400']); // Light green to dark green
 };
 
 export const formatSalesNumber = (sales: number): string => {
