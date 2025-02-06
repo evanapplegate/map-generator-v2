@@ -27,7 +27,7 @@ const MapForm = ({ onSubmit }: MapFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <ApiKeyInput onKeySubmit={setApiKey} />
+      <ApiKeyInput onApiKeyChange={setApiKey} />
       
       <div className="space-y-2">
         <Label htmlFor="description">Map Description</Label>
