@@ -12,21 +12,28 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = utils.sheet_to_json(worksheet);
         
-        // Map the Excel columns to our expected format
-        const stateData: StateData[] = jsonData.map((row: any) => {
-          const countryName = row.COUNTRY || row.Country || row.country;
-          const gdpValue = parseFloat(row.gdp_per_capita || row.gdp || row.GDP || row.sales) || 0;
-          
-          console.log('Processing row:', { countryName, gdpValue });
-          
-          return {
-            state: countryName,
-            postalCode: countryName,
-            sales: gdpValue
-          };
-        }).filter(data => data.state && data.sales > 0);
+        console.log('Raw Excel data:', jsonData);
         
-        console.log('Final processed data:', stateData);
+        // Map the Excel columns to our expected format
+        const stateData: StateData[] = jsonData
+          .map((row: any) => {
+            // Try different possible column names
+            const countryName = row['COUNTRY'] || row['Country'] || row['country'] || row['NAME'] || row['name'];
+            const gdpValue = parseFloat(row['GDP'] || row['gdp'] || row['GDP_PER_CAPITA'] || row['gdp_per_capita'] || row['Value'] || row['value'] || 0);
+            
+            if (countryName && gdpValue) {
+              console.log('Valid row found:', { countryName, gdpValue });
+            }
+            
+            return {
+              state: countryName,
+              postalCode: countryName,
+              sales: gdpValue
+            };
+          })
+          .filter(data => data.state && data.sales > 0);
+        
+        console.log('Processed state data:', stateData);
         resolve(stateData);
       } catch (error) {
         console.error('Error processing Excel file:', error);

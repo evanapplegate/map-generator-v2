@@ -54,8 +54,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(([regions, bounds]: [any, any]) => {
-      console.log('GeoJSON features:', regions.features.map((f: any) => f.properties.name || f.properties.NAME));
-
       // Draw regions (states or countries)
       svg.append("g")
         .selectAll("path")
@@ -63,18 +61,24 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .join("path")
         .attr("d", path)
         .attr("fill", (d: any) => {
-          const geoName = d.properties.name || d.properties.NAME;
+          const geoName = d.properties.NAME || d.properties.name;
           const regionData = data.states.find(s => {
-            const match = !isUSMap && 
-              s.state?.toLowerCase().trim() === geoName?.toLowerCase().trim();
+            if (!s.state || !geoName) return false;
+            
+            const geoNameLower = geoName.toLowerCase().trim();
+            const stateLower = s.state.toLowerCase().trim();
+            
+            const match = geoNameLower === stateLower;
             if (match) {
-              console.log('Match found:', { data: s.state, geo: geoName });
+              console.log('Match found:', { data: s.state, geo: geoName, sales: s.sales });
             }
             return match;
           });
           
           if (regionData) {
-            return colorScale(regionData.sales);
+            const color = colorScale(regionData.sales);
+            console.log('Applying color:', { region: geoName, sales: regionData.sales, color });
+            return color;
           }
           return "#f3f3f3";
         })
@@ -102,12 +106,9 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .on("mouseover", (event, d: any) => {
           const geoName = d.properties?.NAME || d.properties?.name;
           const regionData = data.states.find(s => 
-            isUSMap 
-              ? s.state === d.properties.name
-              : s.state?.toLowerCase() === geoName?.toLowerCase()
+            s.state?.toLowerCase().trim() === geoName?.toLowerCase().trim()
           );
           if (regionData) {
-            console.log('Tooltip shown for:', regionData);
             tooltip
               .style("visibility", "visible")
               .html(`
