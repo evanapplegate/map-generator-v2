@@ -13,6 +13,9 @@ interface MapVisualizationProps {
 const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const { showTooltip, hideTooltip } = useTooltip();
+  const width = 960;
+  const height = 600;
+  const { path } = useMapProjection(width, height);
 
   useEffect(() => {
     console.log('MapVisualization data:', data);
@@ -26,25 +29,23 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const width = 960;
-    const height = 600;
-
     svg
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
-
-    const { path } = useMapProjection(width, height);
-    console.log('Map projection path created:', path);
     
     const mapGroup = svg.append("g");
     console.log('Map group created');
 
+    // Create fills and boundaries
+    const fillsGroup = mapGroup.append("g").attr("class", "country-fills");
+    const boundariesGroup = mapGroup.append("g").attr("class", "country-boundaries");
+
     return () => {
       svg.selectAll("*").remove();
     };
-  }, [data]);
+  }, [data, path]);
 
   if (!data || !svgRef.current) {
     console.log('Rendering null due to missing data or svgRef');
@@ -59,22 +60,20 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
   return (
     <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
       <svg ref={svgRef} className="w-full">
-        {svgRef.current && (
-          <>
-            <CountryFills
-              mapGroup={d3.select(svgRef.current).select("g")}
-              path={useMapProjection(960, 600).path}
-              data={data}
-              onHover={handleHover}
-              onLeave={hideTooltip}
-            />
-            <CountryBoundaries
-              mapGroup={d3.select(svgRef.current).select("g")}
-              path={useMapProjection(960, 600).path}
-              mapType={data.mapType}
-            />
-          </>
-        )}
+        <g>
+          <CountryFills
+            mapGroup={d3.select(svgRef.current).select("g")}
+            path={path}
+            data={data}
+            onHover={handleHover}
+            onLeave={hideTooltip}
+          />
+          <CountryBoundaries
+            mapGroup={d3.select(svgRef.current).select("g")}
+            path={path}
+            mapType={data.mapType}
+          />
+        </g>
       </svg>
     </div>
   );
