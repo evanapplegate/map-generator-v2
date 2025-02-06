@@ -7,6 +7,48 @@ interface MapVisualizationProps {
   data: MapData | null;
 }
 
+// Helper function for fuzzy matching country names
+const normalizeCountryName = (name: string): string => {
+  const aliases: { [key: string]: string[] } = {
+    'United States': ['USA', 'US', 'United States of America', 'America'],
+    'United Kingdom': ['UK', 'Britain', 'Great Britain'],
+    'Australia': ['AUS', 'AU'],
+    // Add more aliases as needed
+  };
+
+  // Normalize the input name
+  const normalized = name.toLowerCase().trim();
+
+  // Check for direct matches in aliases
+  for (const [official, alternates] of Object.entries(aliases)) {
+    if (alternates.some(alt => alt.toLowerCase() === normalized) || 
+        official.toLowerCase() === normalized) {
+      return official;
+    }
+  }
+
+  // If no alias match, return the original name with first letter of each word capitalized
+  return name.toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const fuzzyMatchCountry = (userInput: string, geoName: string): boolean => {
+  const normalizedInput = normalizeCountryName(userInput);
+  const normalizedGeo = normalizeCountryName(geoName);
+  
+  console.log('Fuzzy matching:', { 
+    userInput, 
+    normalizedInput, 
+    geoName, 
+    normalizedGeo, 
+    match: normalizedInput === normalizedGeo 
+  });
+  
+  return normalizedInput === normalizedGeo;
+};
+
 const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -70,9 +112,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           const geoName = d.properties.NAME || d.properties.name;
           const regionData = data.states.find(s => {
             if (!s.state || !geoName) return false;
-            const geoNameLower = geoName.toLowerCase().trim();
-            const stateLower = s.state.toLowerCase().trim();
-            const match = geoNameLower === stateLower;
+            const match = fuzzyMatchCountry(s.state, geoName);
             if (match) {
               console.log('Match found:', { data: s.state, geo: geoName });
             }
@@ -81,17 +121,17 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           
           return regionData ? (data.highlightColor || "#ef4444") : data.defaultFill || parsedRequest.defaultFill;
         })
-        .attr("stroke", "none");  // Remove stroke from polygons
+        .attr("stroke", "none");
 
       // Draw bounds with explicit white stroke
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", "#ffffff")  // Force white stroke for boundaries
-        .attr("stroke-width", "1");  // Force 1px stroke width for boundaries
+        .attr("stroke", "#ffffff")
+        .attr("stroke-width", "1");
 
-      // Add labels for highlighted states
+      // Add labels for highlighted states/countries
       svg.append("g")
         .selectAll("text")
         .data(regions.features)
@@ -105,7 +145,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .text((d: any) => {
           const geoName = d.properties.NAME || d.properties.name;
           const matchingState = data.states.find(s => 
-            s.state.toLowerCase().trim() === geoName.toLowerCase().trim()
+            fuzzyMatchCountry(s.state, geoName)
           );
           return matchingState ? matchingState.postalCode : "";
         })
@@ -127,7 +167,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .on("mouseover", (event, d: any) => {
           const geoName = d.properties?.NAME || d.properties?.name;
           const regionData = data.states.find(s => 
-            s.state?.toLowerCase().trim() === geoName?.toLowerCase().trim()
+            fuzzyMatchCountry(s.state, geoName)
           );
           if (regionData) {
             tooltip
