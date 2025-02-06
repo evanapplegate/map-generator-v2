@@ -71,7 +71,7 @@ const Index = () => {
     }
   };
 
-  const handleExport = (format: 'svg' | 'pdf') => {
+  const handleExport = (format: 'svg') => {
     console.log('Exporting map as:', format);
     const svg = document.querySelector('svg');
     if (!svg) {
@@ -79,16 +79,9 @@ const Index = () => {
       return;
     }
 
-    if (format === 'svg') {
-      const svgData = new XMLSerializer().serializeToString(svg);
-      const blob = new Blob([svgData], { type: 'image/svg+xml' });
-      saveAs(blob, 'us-sales-map.svg');
-    } else {
-      toast({
-        title: "Coming Soon",
-        description: "PDF export will be available in the next update!",
-      });
-    }
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    saveAs(blob, 'us-sales-map.svg');
   };
 
   return (
@@ -111,9 +104,11 @@ const Index = () => {
           <div className="lg:col-span-2 space-y-6">
             {isLoading ? (
               <div className="bg-white p-6 rounded-lg shadow-lg space-y-4">
+                <div className="text-center mb-4 text-lg font-semibold text-gray-600">
+                  LOADING
+                </div>
                 <Skeleton className="h-[600px] w-full rounded-lg animate-pulse" />
                 <div className="flex justify-end space-x-4">
-                  <Skeleton className="h-10 w-24" />
                   <Skeleton className="h-10 w-24" />
                 </div>
               </div>
@@ -121,14 +116,9 @@ const Index = () => {
               <>
                 <MapVisualization data={mapData} />
                 <div className="flex justify-end">
-                  <div className="space-x-4">
-                    <Button onClick={() => handleExport('svg')}>
-                      Export SVG
-                    </Button>
-                    <Button onClick={() => handleExport('pdf')}>
-                      Export PDF
-                    </Button>
-                  </div>
+                  <Button onClick={() => handleExport('svg')}>
+                    Export SVG
+                  </Button>
                 </div>
               </>
             )}
