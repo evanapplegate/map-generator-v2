@@ -25,32 +25,50 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    const projection = d3.geoAlbersUsa()
-      .scale(1000)
-      .translate([width / 2, height / 2]);
+    // Determine if we're showing a US map or world map based on the data
+    const isUSMap = data.states.some(s => s.postalCode?.length === 2);
+
+    const projection = isUSMap 
+      ? d3.geoAlbersUsa()
+          .scale(1000)
+          .translate([width / 2, height / 2])
+      : d3.geoEqualEarth()
+          .scale(180)
+          .translate([width / 2, height / 2]);
 
     const path = d3.geoPath().projection(projection);
     const colorScale = getColorScale(data.minSales, data.maxSales);
 
-    // Load US states GeoJSON data
-    Promise.all([
-      d3.json("/geojson/US_states.geojson"),
-      d3.json("/geojson/US_bounds.geojson")
-    ]).then(([states, bounds]: [any, any]) => {
-      // Draw state boundaries
+    // Load appropriate GeoJSON data based on map type
+    const dataPromise = isUSMap
+      ? Promise.all([
+          d3.json("/geojson/US_states.geojson"),
+          d3.json("/geojson/US_bounds.geojson")
+        ])
+      : Promise.all([
+          d3.json("/geojson/countries.geojson"),
+          d3.json("/geojson/country_bounds.geojson")
+        ]);
+
+    dataPromise.then(([regions, bounds]: [any, any]) => {
+      // Draw region boundaries (states or countries)
       svg.append("g")
         .selectAll("path")
-        .data(states.features)
+        .data(regions.features)
         .join("path")
         .attr("d", path)
         .attr("fill", (d: any) => {
-          const stateData = data.states.find(s => s.state === d.properties.name);
-          return stateData ? colorScale(stateData.sales) : "#eee";
+          const regionData = data.states.find(s => 
+            isUSMap 
+              ? s.state === d.properties.name
+              : s.postalCode === d.properties.ISO_A2
+          );
+          return regionData ? colorScale(regionData.sales) : "#eee";
         })
         .attr("stroke", "white")
         .attr("stroke-width", "0.5px");
 
-      // Draw US bounds
+      // Draw bounds
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
@@ -71,13 +89,17 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
       svg.selectAll("path")
         .on("mouseover", (event, d: any) => {
-          const stateData = data.states.find(s => s.state === d.properties.name);
-          if (stateData) {
+          const regionData = data.states.find(s => 
+            isUSMap 
+              ? s.state === d.properties.name
+              : s.postalCode === d.properties.ISO_A2
+          );
+          if (regionData) {
             tooltip
               .style("visibility", "visible")
               .html(`
-                <strong>${stateData.state}</strong><br/>
-                Sales: ${formatSalesNumber(stateData.sales)}
+                <strong>${regionData.state}</strong><br/>
+                ${isUSMap ? 'Sales' : 'GDP'}: ${formatSalesNumber(regionData.sales)}
               `);
           }
         })
