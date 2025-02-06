@@ -79,9 +79,22 @@ const Index = () => {
       return;
     }
 
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([svgData], { type: 'image/svg+xml' });
-    saveAs(blob, 'us-sales-map.svg');
+    // Clone the SVG to avoid modifying the displayed one
+    const clonedSvg = svg.cloneNode(true) as SVGElement;
+    
+    // Add XML declaration and SVG namespace
+    const svgData = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' +
+      new XMLSerializer().serializeToString(clonedSvg)
+        .replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+
+    // Create blob with proper SVG MIME type
+    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    saveAs(blob, 'map-export.svg');
+
+    toast({
+      title: "Success",
+      description: "Map exported successfully!",
+    });
   };
 
   return (
