@@ -33,7 +33,7 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
             postalCode: countryName,
             sales: gdpValue
           };
-        });
+        }).filter(data => data.state && data.sales > 0);
         
         console.log('Processed Excel data:', stateData);
         resolve(stateData);
@@ -54,7 +54,7 @@ export const getColorScale = (minSales: number, maxSales: number) => {
   console.log('Creating color scale with range:', { minSales, maxSales });
   return d3.scaleSequential()
     .domain([minSales, maxSales])
-    .interpolator(d3.interpolate('#90EE90', '#006400')); // Light green to dark green
+    .interpolator(d3.interpolateGreens); // Using d3's built-in green color scheme
 };
 
 export const formatSalesNumber = (sales: number): string => {

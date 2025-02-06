@@ -58,7 +58,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         bounds: bounds
       });
 
-      // Draw regions (states or countries) with no stroke
+      // Draw regions (states or countries)
       svg.append("g")
         .selectAll("path")
         .data(regions.features)
@@ -68,25 +68,33 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           const geoName = d.properties?.NAME || d.properties?.name;
           const regionData = data.states.find(s => {
             if (!s.state || !geoName) return false;
-            return isUSMap 
+            const stateMatch = isUSMap 
               ? s.state === d.properties.name
               : s.state.toLowerCase() === geoName.toLowerCase();
+            if (stateMatch) {
+              console.log('Matched region:', {
+                dataState: s.state,
+                geoName: geoName,
+                sales: s.sales
+              });
+            }
+            return stateMatch;
           });
           
           if (regionData) {
-            console.log('Found data for region:', {
-              name: geoName,
+            const color = colorScale(regionData.sales);
+            console.log('Applying color:', {
+              region: geoName,
               sales: regionData.sales,
-              color: colorScale(regionData.sales)
+              color: color
             });
-            return colorScale(regionData.sales);
+            return color;
           }
           return "#f3f3f3"; // Light gray for no data
         })
-        .attr("stroke", "none")
-        .attr("stroke-width", "0");
+        .attr("stroke", "none");
 
-      // Draw bounds with 1px white stroke
+      // Draw bounds
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
