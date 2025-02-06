@@ -12,7 +12,7 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
 
   const handleExport = async (format: 'svg' | 'pdf') => {
     try {
-      // Wait longer to ensure the map is fully rendered, especially for higher detail levels
+      // Wait for map to render
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const mapContainer = document.querySelector('.map-visualization');
@@ -23,40 +23,39 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
       }
 
       if (format === 'svg') {
-        // Clone the SVG to avoid modifying the displayed one
-        const clonedSvg = svg.cloneNode(true) as SVGElement;
+        // Create a new SVG element
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(svg);
         
-        // Copy all computed styles from the original SVG
-        const styles = window.getComputedStyle(svg);
-        const cssText = Array.from(styles).reduce((str, property) => {
-          return `${str}${property}:${styles.getPropertyValue(property)};`;
-        }, '');
-        
-        // Ensure viewBox and dimensions are preserved
-        const viewBox = svg.getAttribute('viewBox');
-        if (viewBox) {
-          clonedSvg.setAttribute('viewBox', viewBox);
-        }
-        
-        // Set explicit width and height
-        clonedSvg.setAttribute('width', '960');
-        clonedSvg.setAttribute('height', '600');
-        clonedSvg.setAttribute('style', cssText);
-        
-        // Ensure all paths and elements are included
-        const paths = clonedSvg.querySelectorAll('path');
-        paths.forEach(path => {
-          const originalPath = svg.querySelector(`path[d="${path.getAttribute('d')}"]`);
-          if (originalPath) {
-            const styles = window.getComputedStyle(originalPath);
-            path.setAttribute('style', Array.from(styles).reduce((str, property) => {
-              return `${str}${property}:${styles.getPropertyValue(property)};`;
-            }, ''));
+        // Create a clean SVG string with necessary attributes
+        const cleanSvgString = svgString
+          .replace(/(\w+)?:?xlink=/g, 'xlink=') // Fix xlink namespace
+          .replace(/NS\d+:href/g, 'xlink:href') // Fix href namespace
+          .replace(/\n/g, ' ') // Remove newlines
+          .replace(/\s{2,}/g, ' ') // Remove extra spaces
+          .replace(/<svg/, `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="960" height="600"`);
+
+        // Create a new document to properly handle SVG namespaces
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(cleanSvgString, 'image/svg+xml');
+        const newSvg = svgDoc.documentElement;
+
+        // Copy computed styles for each path
+        const paths = svg.querySelectorAll('path');
+        const newPaths = newSvg.querySelectorAll('path');
+        paths.forEach((path, index) => {
+          const computedStyle = window.getComputedStyle(path);
+          const newPath = newPaths[index];
+          if (newPath) {
+            newPath.setAttribute('fill', computedStyle.fill);
+            newPath.setAttribute('stroke', computedStyle.stroke);
+            newPath.setAttribute('stroke-width', computedStyle.strokeWidth);
           }
         });
 
-        const svgData = new XMLSerializer().serializeToString(clonedSvg);
-        const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        // Serialize back to string with proper formatting
+        const finalSvgString = serializer.serializeToString(newSvg);
+        const blob = new Blob([finalSvgString], { type: 'image/svg+xml;charset=utf-8' });
         saveAs(blob, 'world-sales-map.svg');
         
         toast({
