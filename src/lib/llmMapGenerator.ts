@@ -24,9 +24,10 @@ RESPOND ONLY WITH A VALID JSON OBJECT IN THIS EXACT FORMAT:
   "borderColor": "#hexColor"
 }
 
-DO NOT INCLUDE ANY ADDITIONAL TEXT, MARKDOWN, OR FORMATTING. RETURN ONLY THE JSON OBJECT.`;
+DO NOT INCLUDE ANY ADDITIONAL TEXT, MARKDOWN, OR FORMATTING. RETURN ONLY THE JSON OBJECT.
+IMPORTANT: Use different color schemes and styling for visual variety.`;
 
-export const generateMapInstructions = async (description: string, apiKey: string): Promise<MapData> => {
+export const generateMapInstructions = async (description: string, apiKey: string): Promise<MapData[]> => {
   if (!apiKey) {
     console.log('No API key provided');
     throw new Error('OpenAI API key required for map generation');
@@ -40,39 +41,42 @@ export const generateMapInstructions = async (description: string, apiKey: strin
   try {
     console.log('Sending request to OpenAI:', description);
     
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: description }
-      ],
-      temperature: 0.2,
-    });
+    // Generate 4 variations
+    const variations = await Promise.all(Array(4).fill(null).map(async () => {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: description }
+        ],
+        temperature: 0.8, // Increased for more variation
+      });
 
-    const response = completion.choices[0]?.message?.content;
-    if (!response) throw new Error('No response from OpenAI');
+      const response = completion.choices[0]?.message?.content;
+      if (!response) throw new Error('No response from OpenAI');
 
-    console.log('OpenAI response:', response);
-    
-    // Since we're now requesting pure JSON, we can parse directly
-    const parsedResponse = JSON.parse(response);
+      console.log('OpenAI response:', response);
+      
+      // Since we're now requesting pure JSON, we can parse directly
+      const parsedResponse = JSON.parse(response);
 
-    // Convert the response to our MapData format
-    const mapData: MapData = {
-      states: parsedResponse.states.map((state: any) => ({
-        state: state.state,
-        postalCode: state.postalCode,
-        sales: 100 // Default value for highlighting
-      })),
-      maxSales: 100,
-      minSales: 0,
-      defaultFill: parsedResponse.defaultFill,
-      borderColor: parsedResponse.borderColor,
-      highlightColor: parsedResponse.highlightColor
-    };
+      // Convert the response to our MapData format
+      return {
+        states: parsedResponse.states.map((state: any) => ({
+          state: state.state,
+          postalCode: state.postalCode,
+          sales: 100 // Default value for highlighting
+        })),
+        maxSales: 100,
+        minSales: 0,
+        defaultFill: parsedResponse.defaultFill,
+        borderColor: parsedResponse.borderColor,
+        highlightColor: parsedResponse.highlightColor
+      };
+    }));
 
-    console.log('Converted to MapData:', mapData);
-    return mapData;
+    console.log('Generated map variations:', variations);
+    return variations;
   } catch (error) {
     console.error('Error generating map instructions:', error);
     throw error;

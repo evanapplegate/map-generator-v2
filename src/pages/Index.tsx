@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { saveAs } from 'file-saver';
 
 const Index = () => {
-  const [mapData, setMapData] = useState<MapData | null>(null);
+  const [mapVariations, setMapVariations] = useState<MapData[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -19,7 +19,7 @@ const Index = () => {
       setIsLoading(true);
       console.log('Handling map request:', request);
       
-      let newMapData: MapData;
+      let newMapData: MapData[];
       
       if (request.file) {
         // Handle data-driven map
@@ -27,13 +27,14 @@ const Index = () => {
         const stateData = await processExcelFile(request.file);
         const sales = stateData.map(d => d.sales);
         
-        newMapData = {
+        // For file uploads, we'll just duplicate the same map 4 times
+        newMapData = Array(4).fill({
           states: stateData,
           maxSales: Math.max(...sales),
           minSales: Math.min(...sales),
-        };
+        });
       } else {
-        // Use LLM to interpret the request
+        // Use LLM to interpret the request and get 4 variations
         console.log('Using LLM to interpret request');
         if (!request.apiKey) {
           throw new Error('OpenAI API key is required');
@@ -41,12 +42,12 @@ const Index = () => {
         newMapData = await generateMapInstructions(request.description, request.apiKey);
       }
 
-      console.log('Setting new map data:', newMapData);
-      setMapData(newMapData);
+      console.log('Setting new map variations:', newMapData);
+      setMapVariations(newMapData);
       
       toast({
         title: "Success",
-        description: "Map generated successfully!",
+        description: "Maps generated successfully!",
       });
     } catch (error) {
       console.error('Error handling map request:', error);
@@ -60,9 +61,9 @@ const Index = () => {
     }
   };
 
-  const handleExport = (format: 'svg') => {
+  const handleExport = (format: 'svg', index: number) => {
     console.log('Exporting map as:', format);
-    const svgElement = document.querySelector('.map-visualization svg');
+    const svgElement = document.querySelector(`.map-visualization-${index} svg`);
     if (!svgElement) {
       console.error('No SVG element found for export');
       toast({
@@ -85,7 +86,6 @@ const Index = () => {
     clonedSvg.removeAttribute('style');
     Array.from(clonedSvg.querySelectorAll('*')).forEach(element => {
       if (element instanceof SVGElement) {
-        // Remove empty transforms and undefined classes
         if (element.getAttribute('transform') === '') {
           element.removeAttribute('transform');
         }
@@ -95,7 +95,6 @@ const Index = () => {
       }
     });
     
-    // Ensure proper SVG structure with all required namespaces
     const svgData = [
       '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
       '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">',
@@ -112,12 +111,10 @@ const Index = () => {
       '</svg>'
     ].join('\n');
 
-    // Create blob with proper SVG MIME type
     const blob = new Blob([svgData], { 
       type: 'image/svg+xml;charset=utf-8'
     });
     
-    // Check SVG data size
     if (blob.size < 1024) {
       console.error('Generated SVG is suspiciously small:', blob.size, 'bytes');
       toast({
@@ -128,7 +125,7 @@ const Index = () => {
       return;
     }
 
-    saveAs(blob, 'map-export.svg');
+    saveAs(blob, `map-export-${index + 1}.svg`);
     toast({
       title: "Success",
       description: "Map exported successfully!",
@@ -144,30 +141,41 @@ const Index = () => {
           </h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg">
             <MapForm onSubmit={handleMapRequest} />
           </div>
           
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-3">
             {isLoading ? (
-              <div className="bg-white p-6 rounded-lg shadow-lg space-y-4">
-                <div className="text-center mb-4 text-lg font-semibold text-gray-600">
-                  Generating Map...
-                </div>
-                <Skeleton className="h-[600px] w-full rounded-lg animate-pulse" />
-                <div className="flex justify-end space-x-4">
-                  <Skeleton className="h-10 w-24" />
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                {Array(4).fill(null).map((_, i) => (
+                  <div key={i} className="bg-white p-6 rounded-lg shadow-lg space-y-4">
+                    <div className="text-center mb-4 text-lg font-semibold text-gray-600">
+                      Variation {i + 1}
+                    </div>
+                    <Skeleton className="h-[400px] w-full rounded-lg animate-pulse" />
+                    <div className="flex justify-end space-x-4">
+                      <Skeleton className="h-10 w-24" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : mapData && (
-              <div className="map-visualization">
-                <MapVisualization data={mapData} />
-                <div className="flex justify-end mt-4">
-                  <Button onClick={() => handleExport('svg')}>
-                    Export SVG
-                  </Button>
-                </div>
+            ) : mapVariations && (
+              <div className="grid grid-cols-2 gap-4">
+                {mapVariations.map((mapData, index) => (
+                  <div key={index} className={`map-visualization-${index} bg-white p-6 rounded-lg shadow-lg`}>
+                    <div className="text-center mb-4 text-lg font-semibold text-gray-600">
+                      Variation {index + 1}
+                    </div>
+                    <MapVisualization data={mapData} />
+                    <div className="flex justify-end mt-4">
+                      <Button onClick={() => handleExport('svg', index)}>
+                        Export SVG
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -178,4 +186,3 @@ const Index = () => {
 };
 
 export default Index;
-
