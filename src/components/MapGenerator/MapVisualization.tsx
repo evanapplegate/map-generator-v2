@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { MapData } from '@/lib/types';
-import { getColorScale, formatSalesNumber } from '@/lib/mapUtils';
+import { formatSalesNumber } from '@/lib/mapUtils';
 
 interface MapVisualizationProps {
   data: MapData | null;
@@ -41,7 +41,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           .translate([width / 2, height / 2]);
 
     const path = d3.geoPath().projection(projection);
-    const colorScale = getColorScale(data.minSales, data.maxSales);
 
     const dataPromise = isUSMap
       ? Promise.all([
@@ -70,19 +69,15 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             
             const match = geoNameLower === stateLower;
             if (match) {
-              console.log('Match found:', { data: s.state, geo: geoName, sales: s.sales });
+              console.log('Match found:', { data: s.state, geo: geoName });
             }
             return match;
           });
           
-          if (regionData) {
-            const color = colorScale(regionData.sales);
-            console.log('Applying color:', { region: geoName, sales: regionData.sales, color });
-            return color;
-          }
-          return "#f3f3f3";
+          return regionData ? "#ef4444" : "#f3f3f3"; // Red for highlighted states, light gray for others
         })
-        .attr("stroke", "none");
+        .attr("stroke", "white")
+        .attr("stroke-width", "0.5px");
 
       // Draw bounds
       svg.append("path")
@@ -91,6 +86,28 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("fill", "none")
         .attr("stroke", "white")
         .attr("stroke-width", "1px");
+
+      // Add labels for highlighted states
+      svg.append("g")
+        .selectAll("text")
+        .data(regions.features)
+        .join("text")
+        .attr("transform", (d: any) => {
+          const centroid = path.centroid(d);
+          return `translate(${centroid[0]},${centroid[1]})`;
+        })
+        .attr("text-anchor", "middle")
+        .attr("dy", ".35em")
+        .text((d: any) => {
+          const geoName = d.properties.NAME || d.properties.name;
+          const isHighlighted = data.states.some(s => 
+            s.state.toLowerCase().trim() === geoName.toLowerCase().trim()
+          );
+          return isHighlighted ? d.properties.POSTAL || "" : "";
+        })
+        .attr("fill", "white")
+        .attr("font-size", "10px")
+        .attr("font-weight", "bold");
 
       const tooltip = d3.select("body")
         .append("div")
@@ -111,10 +128,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           if (regionData) {
             tooltip
               .style("visibility", "visible")
-              .html(`
-                <strong>${regionData.state}</strong><br/>
-                ${isUSMap ? 'Sales' : 'GDP'}: ${formatSalesNumber(regionData.sales)}
-              `);
+              .html(`<strong>${regionData.state}</strong>`);
           }
         })
         .on("mousemove", (event) => {

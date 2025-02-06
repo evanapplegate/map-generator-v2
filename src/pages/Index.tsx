@@ -9,38 +9,33 @@ import { Button } from "@/components/ui/button";
 
 const parseSimpleMapRequest = (description: string): MapData => {
   console.log('Parsing simple map request:', description);
-  const defaultFill = "#f3f4f6"; // light gray
-  const highlightColor = "#ef4444"; // red
   
   // Extract state codes (2 letter codes)
   const stateMatches: string[] = description.match(/\b[A-Z]{2}\b/g) || [];
   console.log('Matched state codes:', stateMatches);
   
-  // Create base state data with explicit type
-  const states: Array<{ state: string; postalCode: string; sales: number }> = [
-    { state: "California", postalCode: "CA", sales: 0 },
-    { state: "New York", postalCode: "NY", sales: 0 },
-    { state: "Texas", postalCode: "TX", sales: 0 },
-    { state: "Connecticut", postalCode: "CT", sales: 0 },
-    { state: "Montana", postalCode: "MT", sales: 0 },
-  ];
-
-  // Highlight matched states
-  states.forEach(state => {
-    if (stateMatches.includes(state.postalCode)) {
-      state.sales = 100; // Will be colored red
-    } else {
-      state.sales = 0; // Will use default fill
-    }
+  // Only create state data for matched states
+  const states = stateMatches.map(code => {
+    const stateNames: Record<string, string> = {
+      'CA': 'California',
+      'NY': 'New York',
+      'TX': 'Texas',
+      'CT': 'Connecticut',
+      'MT': 'Montana'
+    };
+    
+    return {
+      state: stateNames[code] || code,
+      postalCode: code,
+      sales: 100 // Will be colored red
+    };
   });
 
-  const result = {
+  return {
     states,
     maxSales: 100,
     minSales: 0
   };
-  console.log('Simple map request result:', result);
-  return result;
 };
 
 const Index = () => {
