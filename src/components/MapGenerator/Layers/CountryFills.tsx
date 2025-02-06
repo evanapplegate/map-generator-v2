@@ -13,11 +13,16 @@ interface CountryFillsProps {
 
 const CountryFills = ({ mapGroup, path, data, onHover, onLeave }: CountryFillsProps) => {
   useEffect(() => {
+    console.log('CountryFills data:', data);
     const colorScale = getColorScale(data.minSales, data.maxSales);
     const geoJsonPath = data.mapType === "usa" ? "/data/US_states.geojson" : "/data/countries.geojson";
+    
+    console.log('Loading GeoJSON from:', geoJsonPath);
 
     d3.json(geoJsonPath)
       .then((geoData: any) => {
+        console.log('Loaded GeoJSON data:', geoData);
+        
         mapGroup.append("g")
           .attr("class", "country-fills")
           .selectAll("path")
@@ -26,7 +31,9 @@ const CountryFills = ({ mapGroup, path, data, onHover, onLeave }: CountryFillsPr
           .attr("d", path)
           .attr("fill", (d: any) => {
             const countryData = data.states.find(s => s.state === d.properties.name);
-            return countryData ? colorScale(countryData.sales) : "#eee";
+            const color = countryData ? colorScale(countryData.sales) : "#eee";
+            console.log('Country:', d.properties.name, 'Color:', color);
+            return color;
           })
           .attr("stroke", "none")
           .on("mouseover", onHover)

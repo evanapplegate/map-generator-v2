@@ -15,7 +15,13 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
   const { showTooltip, hideTooltip } = useTooltip();
 
   useEffect(() => {
-    if (!data || !svgRef.current) return;
+    console.log('MapVisualization data:', data);
+    console.log('svgRef.current:', svgRef.current);
+    
+    if (!data || !svgRef.current) {
+      console.log('Missing data or svgRef, returning early');
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -30,14 +36,20 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("style", "max-width: 100%; height: auto;");
 
     const { path } = useMapProjection(width, height);
+    console.log('Map projection path created:', path);
+    
     const mapGroup = svg.append("g");
+    console.log('Map group created');
 
     return () => {
       svg.selectAll("*").remove();
     };
   }, [data]);
 
-  if (!data || !svgRef.current) return null;
+  if (!data || !svgRef.current) {
+    console.log('Rendering null due to missing data or svgRef');
+    return null;
+  }
 
   const handleHover = (event: any, d: any) => {
     const countryData = data.states.find(s => s.state === d.properties.name);

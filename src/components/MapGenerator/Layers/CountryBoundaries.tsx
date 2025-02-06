@@ -10,9 +10,12 @@ interface CountryBoundariesProps {
 const CountryBoundaries = ({ mapGroup, path, mapType }: CountryBoundariesProps) => {
   useEffect(() => {
     const geoJsonPath = mapType === "usa" ? "/data/US_bounds.geojson" : "/data/country_bounds.geojson";
+    console.log('Loading boundaries from:', geoJsonPath);
 
     d3.json(geoJsonPath)
       .then((boundariesData: any) => {
+        console.log('Loaded boundaries data:', boundariesData);
+        
         mapGroup.append("g")
           .attr("class", "country-boundaries")
           .selectAll("path")
