@@ -8,11 +8,11 @@ import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
 
 const parseSimpleMapRequest = (description: string): MapData => {
-  console.log('Parsing simple map request:', description);
+  console.log('Index - Parsing simple map request:', description);
   
   // Extract state codes (2 letter codes)
   const stateMatches: string[] = description.match(/\b[A-Z]{2}\b/g) || [];
-  console.log('Matched state codes:', stateMatches);
+  console.log('Index - Matched state codes:', stateMatches);
   
   // Only create state data for matched states
   const states = stateMatches.map(code => {
@@ -24,18 +24,24 @@ const parseSimpleMapRequest = (description: string): MapData => {
       'MT': 'Montana'
     };
     
+    const stateName = stateNames[code] || code;
+    console.log('Index - Creating state data for:', { code, name: stateName });
+    
     return {
-      state: stateNames[code] || code,
+      state: stateName,
       postalCode: code,
-      sales: 100 // Will be colored red
+      sales: 100 // Will be colored blue
     };
   });
 
-  return {
+  const mapData = {
     states,
     maxSales: 100,
     minSales: 0
   };
+  
+  console.log('Index - Final map data:', mapData);
+  return mapData;
 };
 
 const Index = () => {
@@ -141,3 +147,4 @@ const Index = () => {
 };
 
 export default Index;
+
