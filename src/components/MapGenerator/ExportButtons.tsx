@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { saveAs } from 'file-saver';
 import { useToast } from "@/components/ui/use-toast";
+import html2pdf from 'html2pdf.js';
 
 interface ExportButtonsProps {
   onExport: (format: 'svg' | 'pdf') => void;
@@ -29,50 +30,56 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
         throw new Error('SVG element not found');
       }
 
-      // Log SVG dimensions and attributes
-      console.log('SVG width:', svg.getAttribute('width'));
-      console.log('SVG height:', svg.getAttribute('height'));
-      console.log('SVG viewBox:', svg.getAttribute('viewBox'));
-
       if (format === 'svg') {
-        // Clone the SVG to preserve all attributes and content
+        // Create a deep clone of the SVG
         const svgClone = svg.cloneNode(true) as SVGElement;
         
-        // Ensure all required attributes are present
+        // Preserve the namespace
         svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        
+        // Preserve dimensions
         svgClone.setAttribute('width', svg.getAttribute('width') || '960');
         svgClone.setAttribute('height', svg.getAttribute('height') || '600');
         svgClone.setAttribute('viewBox', svg.getAttribute('viewBox') || '0 0 960 600');
         
-        // Get computed styles and apply them inline
-        const svgElements = svgClone.getElementsByTagName('*');
-        for (let i = 0; i < svgElements.length; i++) {
-          const el = svgElements[i] as Element;
-          const styles = window.getComputedStyle(svg.getElementsByTagName(el.tagName)[i]);
-          let cssText = '';
-          for (let j = 0; j < styles.length; j++) {
-            const prop = styles[j];
-            cssText += `${prop}:${styles.getPropertyValue(prop)};`;
-          }
-          (el as HTMLElement).style.cssText = cssText;
-        }
+        // Preserve all styles by copying them directly
+        const allElements = Array.from(svg.getElementsByTagName('*'));
+        const allClonedElements = Array.from(svgClone.getElementsByTagName('*'));
+        
+        allElements.forEach((el, index) => {
+          const computedStyle = window.getComputedStyle(el);
+          const clonedEl = allClonedElements[index];
+          
+          // Preserve fill colors and other important styles
+          const importantStyles = [
+            'fill',
+            'stroke',
+            'stroke-width',
+            'opacity',
+            'transform'
+          ];
+          
+          importantStyles.forEach(style => {
+            const value = computedStyle.getPropertyValue(style);
+            if (value) {
+              clonedEl.setAttribute(style, value);
+            }
+          });
+        });
 
-        // Get the serialized SVG content
+        // Serialize to string
         const serializer = new XMLSerializer();
         const svgContent = serializer.serializeToString(svgClone);
         
-        console.log('Final SVG content length:', svgContent.length);
-        console.log('SVG content preview:', svgContent.substring(0, 200) + '...');
-        
-        // Check SVG size
+        // Verify size
         const svgSize = new Blob([svgContent]).size;
-        console.log('SVG blob size:', svgSize, 'bytes');
+        console.log('SVG size:', svgSize, 'bytes');
         
         if (svgSize < 1024) {
           throw new Error(`Generated SVG is too small (${svgSize} bytes). Please try again.`);
         }
         
-        // Create blob and download
+        // Create and save blob
         const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
         saveAs(blob, 'world-sales-map.svg');
         
@@ -80,8 +87,27 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
           title: "Success",
           description: "Map exported successfully as SVG!",
         });
-      } else {
-        onExport(format);
+      } else if (format === 'pdf') {
+        // PDF Export
+        const element = mapContainer.cloneNode(true) as HTMLElement;
+        
+        const opt = {
+          margin: 1,
+          filename: 'world-sales-map.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+        };
+        
+        try {
+          await html2pdf().set(opt).from(element).save();
+          toast({
+            title: "Success",
+            description: "Map exported successfully as PDF!",
+          });
+        } catch (error) {
+          throw new Error('PDF generation failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        }
       }
     } catch (error) {
       console.error('Export error:', error);
