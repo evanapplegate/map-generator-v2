@@ -20,8 +20,9 @@ const parseSimpleMapRequest = (description: string): MapData => {
   const states: Array<{ state: string; postalCode: string; sales: number }> = [
     { state: "California", postalCode: "CA", sales: 0 },
     { state: "New York", postalCode: "NY", sales: 0 },
+    { state: "Texas", postalCode: "TX", sales: 0 },
+    { state: "Connecticut", postalCode: "CT", sales: 0 },
     { state: "Montana", postalCode: "MT", sales: 0 },
-    // Add more states as needed
   ];
 
   // Highlight matched states

@@ -33,7 +33,6 @@ const MapForm = ({ onSubmit }: MapFormProps) => {
       </div>
       
       <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">Optional: Upload sales data file</p>
         <FileUpload onFileSelect={(file) => setFile(file)} />
       </div>
       
