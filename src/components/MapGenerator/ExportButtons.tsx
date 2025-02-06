@@ -16,29 +16,64 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const mapContainer = document.querySelector('.map-visualization');
-      const svg = mapContainer?.querySelector('svg');
+      console.log('Map container found:', mapContainer);
+      
+      if (!mapContainer) {
+        throw new Error('Map container not found');
+      }
+
+      const svg = mapContainer.querySelector('svg');
+      console.log('SVG element found:', svg);
       
       if (!svg) {
         throw new Error('SVG element not found');
       }
 
+      // Log SVG dimensions and attributes
+      console.log('SVG width:', svg.getAttribute('width'));
+      console.log('SVG height:', svg.getAttribute('height'));
+      console.log('SVG viewBox:', svg.getAttribute('viewBox'));
+
       if (format === 'svg') {
-        // Get the original SVG content directly
-        const svgContent = svg.outerHTML;
+        // Clone the SVG to preserve all attributes and content
+        const svgClone = svg.cloneNode(true) as SVGElement;
         
-        // Add required SVG namespace
-        const svgWithNamespace = svgContent.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+        // Ensure all required attributes are present
+        svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svgClone.setAttribute('width', svg.getAttribute('width') || '960');
+        svgClone.setAttribute('height', svg.getAttribute('height') || '600');
+        svgClone.setAttribute('viewBox', svg.getAttribute('viewBox') || '0 0 960 600');
         
-        // Check if the SVG content is suspiciously small (less than 1KB)
-        const svgSize = new Blob([svgWithNamespace]).size;
+        // Get computed styles and apply them inline
+        const svgElements = svgClone.getElementsByTagName('*');
+        for (let i = 0; i < svgElements.length; i++) {
+          const el = svgElements[i] as Element;
+          const styles = window.getComputedStyle(svg.getElementsByTagName(el.tagName)[i]);
+          let cssText = '';
+          for (let j = 0; j < styles.length; j++) {
+            const prop = styles[j];
+            cssText += `${prop}:${styles.getPropertyValue(prop)};`;
+          }
+          (el as HTMLElement).style.cssText = cssText;
+        }
+
+        // Get the serialized SVG content
+        const serializer = new XMLSerializer();
+        const svgContent = serializer.serializeToString(svgClone);
+        
+        console.log('Final SVG content length:', svgContent.length);
+        console.log('SVG content preview:', svgContent.substring(0, 200) + '...');
+        
+        // Check SVG size
+        const svgSize = new Blob([svgContent]).size;
+        console.log('SVG blob size:', svgSize, 'bytes');
+        
         if (svgSize < 1024) {
-          console.error('SVG size is suspiciously small:', svgSize, 'bytes');
-          console.log('SVG content:', svgWithNamespace);
-          throw new Error('Generated SVG is incomplete (size < 1KB). Please try again.');
+          throw new Error(`Generated SVG is too small (${svgSize} bytes). Please try again.`);
         }
         
         // Create blob and download
-        const blob = new Blob([svgWithNamespace], { type: 'image/svg+xml;charset=utf-8' });
+        const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
         saveAs(blob, 'world-sales-map.svg');
         
         toast({
