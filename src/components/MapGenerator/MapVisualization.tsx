@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { MapData } from '@/lib/types';
-import { getColorScale, formatSalesNumber } from '@/lib/mapUtils';
+import { getColorScale } from '@/lib/mapUtils';
+import { createProjection } from './MapProjection';
+import { createTooltip, handleMouseOver, handleMouseMove, handleMouseOut } from './MapTooltip';
 
 interface MapVisualizationProps {
   data: MapData | null;
@@ -27,23 +29,10 @@ const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps)
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    // Adjust scale based on detail level
-    const getScale = () => {
-      switch (detailLevel) {
-        case "10m": return 160;
-        case "50m": return 170;
-        case "110m": return 180;
-        default: return 180;
-      }
-    };
-
-    const projection = d3.geoEqualEarth()
-      .scale(getScale())
-      .translate([width / 2, height / 2])
-      .clipExtent([[0, 0], [width, height]]);  // Add clipExtent to prevent overflow
-
+    const projection = createProjection(width, height, detailLevel);
     const path = d3.geoPath().projection(projection);
     const colorScale = getColorScale(data.minSales, data.maxSales);
+    const tooltip = createTooltip();
 
     // Load world GeoJSON data based on detail level
     d3.json(`https://cdn.jsdelivr.net/npm/world-atlas@2/countries-${detailLevel}.json`)
@@ -61,39 +50,13 @@ const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps)
             return countryData ? colorScale(countryData.sales) : "#eee";
           })
           .attr("stroke", "white")
-          .attr("stroke-width", "0.5px");
-
-        // Add tooltips
-        const tooltip = d3.select("body")
-          .append("div")
-          .attr("class", "tooltip")
-          .style("position", "absolute")
-          .style("visibility", "hidden")
-          .style("background-color", "white")
-          .style("padding", "10px")
-          .style("border-radius", "5px")
-          .style("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
-
-        svg.selectAll("path")
+          .attr("stroke-width", "0.5px")
           .on("mouseover", (event, d: any) => {
             const countryData = data.states.find(s => s.state === d.properties.name);
-            if (countryData) {
-              tooltip
-                .style("visibility", "visible")
-                .html(`
-                  <strong>${countryData.state}</strong><br/>
-                  GDP: ${formatSalesNumber(countryData.sales)}
-                `);
-            }
+            handleMouseOver(event, d, tooltip, countryData);
           })
-          .on("mousemove", (event) => {
-            tooltip
-              .style("top", (event.pageY - 10) + "px")
-              .style("left", (event.pageX + 10) + "px");
-          })
-          .on("mouseout", () => {
-            tooltip.style("visibility", "hidden");
-          });
+          .on("mousemove", (event) => handleMouseMove(event, tooltip))
+          .on("mouseout", () => handleMouseOut(tooltip));
       })
       .catch(error => {
         console.error('Error loading world map data:', error);
