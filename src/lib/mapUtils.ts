@@ -7,26 +7,17 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        console.log('Processing Excel file:', file.name);
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = utils.sheet_to_json(worksheet);
-        console.log('Raw Excel data:', jsonData);
         
         // Map the Excel columns to our expected format
         const stateData: StateData[] = jsonData.map((row: any) => {
           const countryName = row.COUNTRY || row.Country || row.country;
           const gdpValue = parseFloat(row.gdp_per_capita || row.gdp || row.GDP || row.sales) || 0;
           
-          console.log('Processing row:', { 
-            original: row,
-            mapped: {
-              state: countryName,
-              postalCode: countryName,
-              sales: gdpValue
-            }
-          });
+          console.log('Processing row:', { countryName, gdpValue });
           
           return {
             state: countryName,
@@ -35,26 +26,21 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
           };
         }).filter(data => data.state && data.sales > 0);
         
-        console.log('Processed Excel data:', stateData);
+        console.log('Final processed data:', stateData);
         resolve(stateData);
       } catch (error) {
         console.error('Error processing Excel file:', error);
         reject(error);
       }
     };
-    reader.onerror = (error) => {
-      console.error('FileReader error:', error);
-      reject(error);
-    };
     reader.readAsArrayBuffer(file);
   });
 };
 
 export const getColorScale = (minSales: number, maxSales: number) => {
-  console.log('Creating color scale with range:', { minSales, maxSales });
   return d3.scaleSequential()
     .domain([minSales, maxSales])
-    .interpolator(d3.interpolateGreens); // Using d3's built-in green color scheme
+    .interpolator(d3.interpolateGreens);
 };
 
 export const formatSalesNumber = (sales: number): string => {

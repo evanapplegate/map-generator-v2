@@ -30,6 +30,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
     const isUSMap = data.states.some(s => s.postalCode?.length === 2);
     console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
+    console.log('Data states:', data.states);
 
     const projection = isUSMap 
       ? d3.geoAlbersUsa()
@@ -53,10 +54,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(([regions, bounds]: [any, any]) => {
-      console.log('Loaded GeoJSON data:', { 
-        regionsFeatures: regions.features.length,
-        bounds: bounds
-      });
+      console.log('GeoJSON features:', regions.features.map((f: any) => f.properties.name || f.properties.NAME));
 
       // Draw regions (states or countries)
       svg.append("g")
@@ -65,32 +63,20 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .join("path")
         .attr("d", path)
         .attr("fill", (d: any) => {
-          const geoName = d.properties?.NAME || d.properties?.name;
+          const geoName = d.properties.name || d.properties.NAME;
           const regionData = data.states.find(s => {
-            if (!s.state || !geoName) return false;
-            const stateMatch = isUSMap 
-              ? s.state === d.properties.name
-              : s.state.toLowerCase() === geoName.toLowerCase();
-            if (stateMatch) {
-              console.log('Matched region:', {
-                dataState: s.state,
-                geoName: geoName,
-                sales: s.sales
-              });
+            const match = !isUSMap && 
+              s.state?.toLowerCase().trim() === geoName?.toLowerCase().trim();
+            if (match) {
+              console.log('Match found:', { data: s.state, geo: geoName });
             }
-            return stateMatch;
+            return match;
           });
           
           if (regionData) {
-            const color = colorScale(regionData.sales);
-            console.log('Applying color:', {
-              region: geoName,
-              sales: regionData.sales,
-              color: color
-            });
-            return color;
+            return colorScale(regionData.sales);
           }
-          return "#f3f3f3"; // Light gray for no data
+          return "#f3f3f3";
         })
         .attr("stroke", "none");
 
