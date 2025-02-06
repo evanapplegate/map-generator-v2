@@ -17,6 +17,10 @@ export interface MapData {
   defaultFill?: string;
   borderColor?: string;
   highlightColor?: string;
+  borderWidth?: string;
+  boundaryWidth?: string;
+  labelColor?: string;
+  labelSize?: string;
 }
 
 export interface SimpleMapRequest {

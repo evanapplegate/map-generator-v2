@@ -76,19 +76,18 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             return match;
           });
           
-          // Use the highlightColor from the LLM response for highlighted states
           return regionData ? (data.highlightColor || "#ef4444") : data.defaultFill || parsedRequest.defaultFill;
         })
-        .attr("stroke", data.borderColor || "white")
-        .attr("stroke-width", "0.5px");
+        .attr("stroke", data.borderColor || "#ffffff")
+        .attr("stroke-width", data.borderWidth || "0.5px");
 
       // Draw bounds
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", data.borderColor || "white")
-        .attr("stroke-width", "1px");
+        .attr("stroke", data.borderColor || "#ffffff")
+        .attr("stroke-width", data.boundaryWidth || "1px");
 
       // Add labels for highlighted states
       svg.append("g")
@@ -108,8 +107,8 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           );
           return matchingState ? matchingState.postalCode : "";
         })
-        .attr("fill", "black")
-        .attr("font-size", "14px");
+        .attr("fill", data.labelColor || "#000000")
+        .attr("font-size", data.labelSize || "14px");
 
       // Add tooltips
       const tooltip = d3.select("body")
@@ -117,7 +116,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("class", "tooltip")
         .style("position", "absolute")
         .style("visibility", "hidden")
-        .style("background-color", "white")
+        .style("background-color", "#ffffff")
         .style("padding", "10px")
         .style("border-radius", "5px")
         .style("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
