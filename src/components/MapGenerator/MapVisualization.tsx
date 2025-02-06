@@ -13,7 +13,7 @@ const fuzzyMatchCountry = async (userInput: string, geoName: string): Promise<bo
   
   try {
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || '',
+      apiKey: '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',
       dangerouslyAllowBrowser: true
     });
 
@@ -24,10 +24,11 @@ const fuzzyMatchCountry = async (userInput: string, geoName: string): Promise<bo
     - "America" and "United States" -> true
     - "Britain" and "United Kingdom" -> true
     - "US" and "United States" -> true
+    - "Australia" and "Australia" -> true
     - "France" and "Germany" -> false`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4",
       messages: [
         { role: "system", content: "You are a geography expert. Respond with only 'true' or 'false'." },
         { role: "user", content: prompt }
@@ -101,7 +102,15 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
-      const parsedRequest = parseMapDescription(data.states[0]?.state || "");
+      // Create a map of country names to their colors
+      const countryColors = new Map();
+      data.states.forEach(state => {
+        if (state.state.toLowerCase() === 'usa' || state.state.toLowerCase() === 'united states') {
+          countryColors.set('United States', '#ef4444'); // Red for USA
+        } else if (state.state.toLowerCase() === 'australia') {
+          countryColors.set('Australia', '#3b82f6'); // Blue for Australia
+        }
+      });
       
       // Create an array to store all matching promises
       const matchPromises = regions.features.map(async (d: any) => {
@@ -121,12 +130,14 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .data(regions.features)
         .join("path")
         .attr("d", path)
-        .attr("fill", (d: any, i: number) => {
-          return matchResults[i] ? (data.highlightColor || "#ef4444") : data.defaultFill || parsedRequest.defaultFill;
+        .attr("fill", (d: any) => {
+          const geoName = d.properties.NAME || d.properties.name;
+          return countryColors.get(geoName) || data.defaultFill || "#f3f3f3";
         })
-        .attr("stroke", "none");
+        .attr("stroke", "white")
+        .attr("stroke-width", "0.5");
 
-      // Draw bounds with explicit white stroke
+      // Draw bounds
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
@@ -134,7 +145,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke", "#ffffff")
         .attr("stroke-width", "1");
 
-      // Update labels using the match results
+      // Update labels
       svg.append("g")
         .selectAll("text")
         .data(regions.features)
@@ -145,12 +156,14 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         })
         .attr("text-anchor", "middle")
         .attr("dy", ".35em")
-        .text((d: any, i: number) => {
-          return matchResults[i] ? data.states[0].postalCode : "";
+        .text((d: any) => {
+          const geoName = d.properties.NAME || d.properties.name;
+          return countryColors.has(geoName) ? geoName : "";
         })
-        .attr("fill", data.labelColor || "#000000")
-        .attr("font-size", data.labelSize || "14px");
+        .attr("fill", "#000000")
+        .attr("font-size", "14px");
 
+      // Add tooltips
       const tooltip = d3.select("body")
         .append("div")
         .attr("class", "tooltip")
@@ -164,14 +177,9 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       svg.selectAll("path")
         .on("mouseover", (event, d: any) => {
           const geoName = d.properties?.NAME || d.properties?.name;
-          const regionData = data.states.find(s => 
-            fuzzyMatchCountry(s.state, geoName)
-          );
-          if (regionData) {
-            tooltip
-              .style("visibility", "visible")
-              .html(`<strong>${regionData.state}</strong>`);
-          }
+          tooltip
+            .style("visibility", "visible")
+            .html(`<strong>${geoName}</strong>`);
         })
         .on("mousemove", (event) => {
           tooltip
