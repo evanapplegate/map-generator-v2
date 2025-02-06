@@ -2,51 +2,54 @@ import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { MapData } from '@/lib/types';
 import { parseMapDescription } from '@/lib/mapRequestParser';
+import OpenAI from 'openai';
 
 interface MapVisualizationProps {
   data: MapData | null;
 }
 
-// Helper function for fuzzy matching country names
-const normalizeCountryName = (name: string): string => {
-  const aliases: { [key: string]: string[] } = {
-    'United States': ['USA', 'US', 'United States of America', 'America'],
-    'United Kingdom': ['UK', 'Britain', 'Great Britain'],
-    'Australia': ['AUS', 'AU'],
-    // Add more aliases as needed
-  };
+const fuzzyMatchCountry = async (userInput: string, geoName: string): Promise<boolean> => {
+  if (!userInput || !geoName) return false;
+  
+  try {
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || '',
+      dangerouslyAllowBrowser: true
+    });
 
-  // Normalize the input name
-  const normalized = name.toLowerCase().trim();
+    const prompt = `Are "${userInput}" and "${geoName}" referring to the same country/region? Answer with just "true" or "false".
+    Examples:
+    - "USA" and "United States" -> true
+    - "UK" and "United Kingdom" -> true
+    - "America" and "United States" -> true
+    - "Britain" and "United Kingdom" -> true
+    - "US" and "United States" -> true
+    - "France" and "Germany" -> false`;
 
-  // Check for direct matches in aliases
-  for (const [official, alternates] of Object.entries(aliases)) {
-    if (alternates.some(alt => alt.toLowerCase() === normalized) || 
-        official.toLowerCase() === normalized) {
-      return official;
-    }
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are a geography expert. Respond with only 'true' or 'false'." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0,
+      max_tokens: 5
+    });
+
+    const result = completion.choices[0]?.message?.content?.toLowerCase().includes('true') || false;
+    
+    console.log('Fuzzy matching:', { 
+      userInput, 
+      geoName, 
+      match: result 
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Error in fuzzy matching:', error);
+    // Fallback to simple matching if API fails
+    return userInput.toLowerCase().trim() === geoName.toLowerCase().trim();
   }
-
-  // If no alias match, return the original name with first letter of each word capitalized
-  return name.toLowerCase()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
-
-const fuzzyMatchCountry = (userInput: string, geoName: string): boolean => {
-  const normalizedInput = normalizeCountryName(userInput);
-  const normalizedGeo = normalizeCountryName(geoName);
-  
-  console.log('Fuzzy matching:', { 
-    userInput, 
-    normalizedInput, 
-    geoName, 
-    normalizedGeo, 
-    match: normalizedInput === normalizedGeo 
-  });
-  
-  return normalizedInput === normalizedGeo;
 };
 
 const MapVisualization = ({ data }: MapVisualizationProps) => {
@@ -97,29 +100,29 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           d3.json("/geojson/country_bounds.geojson")
         ]);
 
-    dataPromise.then(([regions, bounds]: [any, any]) => {
-      // Parse the map description to get colors and highlighted states
+    dataPromise.then(async ([regions, bounds]: [any, any]) => {
       const parsedRequest = parseMapDescription(data.states[0]?.state || "");
-      console.log('Parsed request:', parsedRequest);
       
-      // Draw regions (states or countries)
+      // Create an array to store all matching promises
+      const matchPromises = regions.features.map(async (d: any) => {
+        const geoName = d.properties.NAME || d.properties.name;
+        const matches = await Promise.all(
+          data.states.map(s => fuzzyMatchCountry(s.state, geoName))
+        );
+        return matches.some(match => match);
+      });
+
+      // Wait for all matching results
+      const matchResults = await Promise.all(matchPromises);
+
+      // Draw regions with the match results
       svg.append("g")
         .selectAll("path")
         .data(regions.features)
         .join("path")
         .attr("d", path)
-        .attr("fill", (d: any) => {
-          const geoName = d.properties.NAME || d.properties.name;
-          const regionData = data.states.find(s => {
-            if (!s.state || !geoName) return false;
-            const match = fuzzyMatchCountry(s.state, geoName);
-            if (match) {
-              console.log('Match found:', { data: s.state, geo: geoName });
-            }
-            return match;
-          });
-          
-          return regionData ? (data.highlightColor || "#ef4444") : data.defaultFill || parsedRequest.defaultFill;
+        .attr("fill", (d: any, i: number) => {
+          return matchResults[i] ? (data.highlightColor || "#ef4444") : data.defaultFill || parsedRequest.defaultFill;
         })
         .attr("stroke", "none");
 
@@ -131,7 +134,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke", "#ffffff")
         .attr("stroke-width", "1");
 
-      // Add labels for highlighted states/countries
+      // Update labels using the match results
       svg.append("g")
         .selectAll("text")
         .data(regions.features)
@@ -142,17 +145,12 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         })
         .attr("text-anchor", "middle")
         .attr("dy", ".35em")
-        .text((d: any) => {
-          const geoName = d.properties.NAME || d.properties.name;
-          const matchingState = data.states.find(s => 
-            fuzzyMatchCountry(s.state, geoName)
-          );
-          return matchingState ? matchingState.postalCode : "";
+        .text((d: any, i: number) => {
+          return matchResults[i] ? data.states[0].postalCode : "";
         })
         .attr("fill", data.labelColor || "#000000")
         .attr("font-size", data.labelSize || "14px");
 
-      // Add tooltips
       const tooltip = d3.select("body")
         .append("div")
         .attr("class", "tooltip")
