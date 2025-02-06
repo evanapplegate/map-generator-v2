@@ -5,14 +5,14 @@ import { MapRequest, MapData } from "@/lib/types";
 import { processExcelFile } from "@/lib/mapUtils";
 import { useToast } from "@/components/ui/use-toast";
 import { saveAs } from "file-saver";
-import { Button } from "@/components/ui/button"; // Add Button import
+import { Button } from "@/components/ui/button";
 
 const parseSimpleMapRequest = (description: string): MapData => {
   const defaultFill = "#f3f4f6"; // light gray
   const highlightColor = "#ef4444"; // red
   
   // Extract state codes (2 letter codes)
-  const stateMatches = description.match(/\b[A-Z]{2}\b/g) || [];
+  const stateMatches: string[] = description.match(/\b[A-Z]{2}\b/g) || [];
   
   // Create base state data with explicit type
   const states: Array<{ state: string; postalCode: string; sales: number }> = [
