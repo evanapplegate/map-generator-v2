@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
+import * as topojson from 'topojson-client';
 import { MapData } from '@/lib/types';
 import { getColorScale, formatSalesNumber } from '@/lib/mapUtils';
 
@@ -35,12 +36,12 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     // Load world GeoJSON data
     d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then((world: any) => {
-        const countries = d3.geoFeature(world, world.objects.countries).features;
+        const countries = topojson.feature(world, world.objects.countries);
         
         // Create map
         svg.append("g")
           .selectAll("path")
-          .data(countries)
+          .data(countries.features)
           .join("path")
           .attr("d", path)
           .attr("fill", (d: any) => {
