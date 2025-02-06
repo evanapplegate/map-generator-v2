@@ -72,6 +72,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             if (!s.state || !geoName) return false;
             const geoNameLower = geoName.toLowerCase().trim();
             const stateLower = s.state.toLowerCase().trim();
+            // Handle both "United States" and "United States of America"
+            if (stateLower === "usa" || stateLower === "united states") {
+              return geoNameLower === "united states of america" || geoNameLower === "united states";
+            }
             const match = geoNameLower === stateLower;
             if (match) {
               console.log('Match found:', { data: s.state, geo: geoName });
@@ -91,7 +95,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke", "#ffffff")  // Force white stroke for boundaries
         .attr("stroke-width", "1");  // Force 1px stroke width for boundaries
 
-      // Add labels for highlighted states
+      // Add labels for highlighted regions
       svg.append("g")
         .selectAll("text")
         .data(regions.features)
@@ -104,10 +108,16 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("dy", ".35em")
         .text((d: any) => {
           const geoName = d.properties.NAME || d.properties.name;
-          const matchingState = data.states.find(s => 
-            s.state.toLowerCase().trim() === geoName.toLowerCase().trim()
-          );
-          return matchingState ? matchingState.postalCode : "";
+          const matchingState = data.states.find(s => {
+            const stateLower = s.state.toLowerCase().trim();
+            const geoNameLower = geoName.toLowerCase().trim();
+            // Handle USA case
+            if (stateLower === "usa" || stateLower === "united states") {
+              return geoNameLower === "united states of america" || geoNameLower === "united states";
+            }
+            return geoNameLower === stateLower;
+          });
+          return matchingState ? matchingState.state.toUpperCase() : "";
         })
         .attr("fill", data.labelColor || "#000000")
         .attr("font-size", data.labelSize || "14px");
@@ -126,9 +136,14 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       svg.selectAll("path")
         .on("mouseover", (event, d: any) => {
           const geoName = d.properties?.NAME || d.properties?.name;
-          const regionData = data.states.find(s => 
-            s.state?.toLowerCase().trim() === geoName?.toLowerCase().trim()
-          );
+          const regionData = data.states.find(s => {
+            const stateLower = s.state?.toLowerCase().trim();
+            const geoNameLower = geoName?.toLowerCase().trim();
+            if (stateLower === "usa" || stateLower === "united states") {
+              return geoNameLower === "united states of america" || geoNameLower === "united states";
+            }
+            return geoNameLower === stateLower;
+          });
           if (regionData) {
             tooltip
               .style("visibility", "visible")
