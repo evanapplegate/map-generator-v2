@@ -23,21 +23,14 @@ const fuzzyMatchCountry = async (userInput: string, geoFeature: any): Promise<{ 
     const prompt = `Analyze if the user's input "${userInput}" refers to the same geographic region as this GeoJSON feature:
     ${geoProperties}
 
-    If it's a match, respond with a JSON object: 
+    Respond with a JSON object only, no markdown:
     {
-      "isMatch": true,
+      "isMatch": true/false,
       "color": "<color>" // Use #ef4444 for USA/United States, #3b82f6 for Australia, or null for other matches
-    }
-    
-    If it's not a match, respond with: {"isMatch": false}
-
-    Examples of matches:
-    - "USA", "US", "United States", "America" all match with a feature named "United States"
-    - "UK", "Britain", "United Kingdom" all match with "United Kingdom"
-    - "Australia" matches with "Australia"`;
+    }`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",  // Changed from gpt-4 to gpt-4o-mini
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "You are a geography expert. Respond only with the JSON object as specified." },
         { role: "user", content: prompt }

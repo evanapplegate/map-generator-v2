@@ -19,30 +19,28 @@ const Index = () => {
       setIsLoading(true);
       console.log('Handling map request:', request);
       
+      let newMapData;
+      
       if (request.file) {
         // Handle data-driven map
         console.log('Processing file-based request');
         const stateData = await processExcelFile(request.file);
         const sales = stateData.map(d => d.sales);
         
-        const newMapData = {
+        newMapData = {
           states: stateData,
           maxSales: Math.max(...sales),
           minSales: Math.min(...sales),
         };
-        console.log('Setting new map data:', newMapData);
-        setMapData(newMapData);
       } else if (request.apiKey) {
         // Use LLM to interpret the request
         console.log('Using LLM to interpret request');
-        const llmMapData = await generateMapInstructions(request.description, request.apiKey);
-        console.log('Setting LLM-generated map data:', llmMapData);
-        setMapData(llmMapData);
+        newMapData = await generateMapInstructions(request.description, request.apiKey);
       } else {
         // Fallback to simple parsing
         console.log('Using simple parser (no API key provided)');
         const states = request.description.match(/\b[A-Z]{2}\b/g) || [];
-        const simpleMapData = {
+        newMapData = {
           states: states.map(code => ({
             state: code,
             postalCode: code,
@@ -51,10 +49,12 @@ const Index = () => {
           maxSales: 100,
           minSales: 0
         };
-        console.log('Setting simple map data:', simpleMapData);
-        setMapData(simpleMapData);
       }
 
+      console.log('Setting new map data:', newMapData);
+      setMapData(newMapData);
+      
+      // Only show success toast after map data is set
       toast({
         title: "Success",
         description: "Map generated successfully!",
