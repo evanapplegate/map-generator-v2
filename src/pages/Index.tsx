@@ -1,11 +1,10 @@
 import { useState } from "react";
-import MapForm from "@/components/MapGenerator/MapForm";
-import MapVisualization from "@/components/MapGenerator/MapVisualization";
 import { MapRequest, MapData } from "@/lib/types";
-import { processExcelFile } from "@/lib/mapUtils";
 import { useToast } from "@/components/ui/use-toast";
-import { saveAs } from "file-saver";
-import { Button } from "@/components/ui/button";
+import { processExcelFile } from "@/lib/mapUtils";
+import Header from "@/components/MapGenerator/Header";
+import MapForm from "@/components/MapGenerator/MapForm";
+import MapContainer from "@/components/MapGenerator/MapContainer";
 
 const parseSimpleMapRequest = (description: string): MapData => {
   const defaultFill = "#f3f4f6"; // light gray
@@ -19,7 +18,6 @@ const parseSimpleMapRequest = (description: string): MapData => {
     { state: "California", postalCode: "CA", sales: 0 },
     { state: "New York", postalCode: "NY", sales: 0 },
     { state: "Montana", postalCode: "MT", sales: 0 },
-    // Add more states as needed
   ];
 
   // Highlight matched states
@@ -73,55 +71,16 @@ const Index = () => {
     }
   };
 
-  const handleExport = (format: 'svg' | 'pdf') => {
-    const svg = document.querySelector('svg');
-    if (!svg) return;
-
-    if (format === 'svg') {
-      const svgData = new XMLSerializer().serializeToString(svg);
-      const blob = new Blob([svgData], { type: 'image/svg+xml' });
-      saveAs(blob, 'us-sales-map.svg');
-    } else {
-      toast({
-        title: "Coming Soon",
-        description: "PDF export will be available in the next update!",
-      });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            US Sales Map Generator
-          </h1>
-          <p className="text-lg text-gray-600">
-            Upload your sales data or describe your map requirements
-          </p>
-        </div>
-
+        <Header />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg">
             <MapForm onSubmit={handleMapRequest} />
           </div>
-          
-          <div className="lg:col-span-2 space-y-6">
-            {mapData && (
-              <>
-                <MapVisualization data={mapData} detailLevel={detailLevel} />
-                <div className="flex justify-end">
-                  <div className="space-x-4">
-                    <Button onClick={() => handleExport('svg')}>
-                      Export SVG
-                    </Button>
-                    <Button onClick={() => handleExport('pdf')}>
-                      Export PDF
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
+          <div className="lg:col-span-2">
+            <MapContainer mapData={mapData} detailLevel={detailLevel} />
           </div>
         </div>
       </div>
