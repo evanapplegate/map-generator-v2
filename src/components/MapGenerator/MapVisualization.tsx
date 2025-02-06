@@ -1,55 +1,45 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { MapData } from '@/lib/types';
 import { parseMapDescription } from '@/lib/mapRequestParser';
-import OpenAI from 'openai';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 interface MapVisualizationProps {
   data: MapData | null;
 }
 
-const fuzzyMatchCountry = async (userInput: string, geoFeature: any, apiKey: string): Promise<{ isMatch: boolean; color?: string }> => {
-  if (!userInput || !geoFeature || !apiKey) return { isMatch: false };
+const fuzzyMatchCountry = (userInput: string, geoFeature: any): { isMatch: boolean; color?: string } => {
+  if (!userInput || !geoFeature) return { isMatch: false };
   
   try {
-    const openai = new OpenAI({
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: true
-    });
-
-    const geoName = geoFeature.properties.NAME || geoFeature.properties.name;
-    const geoProperties = JSON.stringify(geoFeature.properties);
-
-    const prompt = `Analyze if the user's input "${userInput}" refers to the same geographic region as this GeoJSON feature:
-    ${geoProperties}
-
-    Respond with a JSON object only, no markdown:
-    {
-      "isMatch": true/false,
-      "color": "<color>" // Use #ef4444 for USA/United States, #3b82f6 for Australia, or null for other matches
-    }`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a geography expert. Respond only with the JSON object as specified." },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0
-    });
-
-    const result = JSON.parse(completion.choices[0]?.message?.content || '{"isMatch": false}');
+    const geoName = (geoFeature.properties.NAME || geoFeature.properties.name || '').toLowerCase();
+    const searchTerm = userInput.toLowerCase();
     
-    console.log('Fuzzy matching:', { 
-      userInput, 
-      geoName,
-      result
-    });
+    // Direct match
+    if (geoName === searchTerm) {
+      return { isMatch: true };
+    }
     
-    return result;
+    // Partial match
+    if (geoName.includes(searchTerm) || searchTerm.includes(geoName)) {
+      return { isMatch: true };
+    }
+    
+    // Handle common abbreviations for US states
+    const stateAbbreviations: { [key: string]: string } = {
+      'ca': 'california',
+      'ny': 'new york',
+      'fl': 'florida',
+      'tx': 'texas',
+      // Add more as needed
+    };
+    
+    if (stateAbbreviations[searchTerm] === geoName || 
+        stateAbbreviations[geoName] === searchTerm) {
+      return { isMatch: true };
+    }
+
+    return { isMatch: false };
   } catch (error) {
     console.error('Error in fuzzy matching:', error);
     return { isMatch: false };
@@ -58,29 +48,11 @@ const fuzzyMatchCountry = async (userInput: string, geoFeature: any, apiKey: str
 
 const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [apiKey, setApiKey] = useState('');
-  const [isKeySet, setIsKeySet] = useState(false);
   const { toast } = useToast();
 
-  const handleSetApiKey = () => {
-    if (!apiKey) {
-      toast({
-        title: "Error",
-        description: "Please enter an OpenAI API key",
-        variant: "destructive"
-      });
-      return;
-    }
-    setIsKeySet(true);
-    toast({
-      title: "Success",
-      description: "API key set successfully",
-    });
-  };
-
   useEffect(() => {
-    if (!data || !svgRef.current || !isKeySet) {
-      console.log('No data, SVG ref, or API key available');
+    if (!data || !svgRef.current) {
+      console.log('No data or SVG ref available');
       return;
     }
 
@@ -96,10 +68,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    // Check if any state name matches a US state name pattern
-    const usStatePattern = /^(Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming)$/i;
-    
-    const isUSMap = data.states.some(s => usStatePattern.test(s.state));
+    const isUSMap = data.states.some(s => /^[A-Z]{2}$/.test(s.state));
     console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
 
     const projection = isUSMap 
@@ -123,17 +92,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
-      const matchPromises = regions.features.map(async (feature: any) => {
-        const matches = await Promise.all(
-          data.states.map(async (s) => {
-            const result = await fuzzyMatchCountry(s.state, feature, apiKey);
-            return result;
-          })
-        );
+      const matchResults = regions.features.map((feature: any) => {
+        const matches = data.states.map(s => fuzzyMatchCountry(s.state, feature));
         return matches.find(m => m.isMatch) || { isMatch: false };
       });
-
-      const matchResults = await Promise.all(matchPromises);
 
       // Draw regions with the match results
       svg.append("g")
@@ -217,30 +179,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     return () => {
       d3.select("body").selectAll(".tooltip").remove();
     };
-  }, [data, isKeySet, apiKey]);
-
-  if (!isKeySet) {
-    return (
-      <div className="w-full bg-white rounded-lg shadow-lg p-4 space-y-4">
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium">Enter OpenAI API Key</h3>
-          <p className="text-sm text-gray-500">
-            Please enter your OpenAI API key to enable map generation
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Input
-            type="password"
-            placeholder="sk-..."
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="flex-1"
-          />
-          <Button onClick={handleSetApiKey}>Set Key</Button>
-        </div>
-      </div>
-    );
-  }
+  }, [data]);
 
   return (
     <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
