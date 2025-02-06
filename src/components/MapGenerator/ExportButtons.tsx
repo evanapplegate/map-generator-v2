@@ -29,6 +29,14 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
         // Add required SVG namespace
         const svgWithNamespace = svgContent.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
         
+        // Check if the SVG content is suspiciously small (less than 1KB)
+        const svgSize = new Blob([svgWithNamespace]).size;
+        if (svgSize < 1024) {
+          console.error('SVG size is suspiciously small:', svgSize, 'bytes');
+          console.log('SVG content:', svgWithNamespace);
+          throw new Error('Generated SVG is incomplete (size < 1KB). Please try again.');
+        }
+        
         // Create blob and download
         const blob = new Blob([svgWithNamespace], { type: 'image/svg+xml;charset=utf-8' });
         saveAs(blob, 'world-sales-map.svg');
@@ -44,7 +52,7 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
       console.error('Export error:', error);
       toast({
         title: "Export Failed",
-        description: "There was an error exporting the map. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error exporting the map. Please try again.",
         variant: "destructive",
       });
     }
