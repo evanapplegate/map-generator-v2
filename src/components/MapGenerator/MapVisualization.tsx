@@ -8,8 +8,8 @@ interface MapVisualizationProps {
   data: MapData | null;
 }
 
-const fuzzyMatchCountry = async (userInput: string, geoName: string): Promise<boolean> => {
-  if (!userInput || !geoName) return false;
+const fuzzyMatchCountry = async (userInput: string, geoFeature: any): Promise<{ isMatch: boolean; color?: string }> => {
+  if (!userInput || !geoFeature) return { isMatch: false };
   
   try {
     const openai = new OpenAI({
@@ -17,39 +17,46 @@ const fuzzyMatchCountry = async (userInput: string, geoName: string): Promise<bo
       dangerouslyAllowBrowser: true
     });
 
-    const prompt = `Are "${userInput}" and "${geoName}" referring to the same country/region? Answer with just "true" or "false".
-    Examples:
-    - "USA" and "United States" -> true
-    - "UK" and "United Kingdom" -> true
-    - "America" and "United States" -> true
-    - "Britain" and "United Kingdom" -> true
-    - "US" and "United States" -> true
-    - "Australia" and "Australia" -> true
-    - "France" and "Germany" -> false`;
+    const geoName = geoFeature.properties.NAME || geoFeature.properties.name;
+    const geoProperties = JSON.stringify(geoFeature.properties);
+
+    const prompt = `Analyze if the user's input "${userInput}" refers to the same geographic region as this GeoJSON feature:
+    ${geoProperties}
+
+    If it's a match, respond with a JSON object: 
+    {
+      "isMatch": true,
+      "color": "<color>" // Use #ef4444 for USA/United States, #3b82f6 for Australia, or null for other matches
+    }
+    
+    If it's not a match, respond with: {"isMatch": false}
+
+    Examples of matches:
+    - "USA", "US", "United States", "America" all match with a feature named "United States"
+    - "UK", "Britain", "United Kingdom" all match with "United Kingdom"
+    - "Australia" matches with "Australia"`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
-        { role: "system", content: "You are a geography expert. Respond with only 'true' or 'false'." },
+        { role: "system", content: "You are a geography expert. Respond only with the JSON object as specified." },
         { role: "user", content: prompt }
       ],
-      temperature: 0,
-      max_tokens: 5
+      temperature: 0
     });
 
-    const result = completion.choices[0]?.message?.content?.toLowerCase().includes('true') || false;
+    const result = JSON.parse(completion.choices[0]?.message?.content || '{"isMatch": false}');
     
     console.log('Fuzzy matching:', { 
       userInput, 
-      geoName, 
-      match: result 
+      geoName,
+      result
     });
     
     return result;
   } catch (error) {
     console.error('Error in fuzzy matching:', error);
-    // Fallback to simple matching if API fails
-    return userInput.toLowerCase().trim() === geoName.toLowerCase().trim();
+    return { isMatch: false };
   }
 };
 
@@ -79,7 +86,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     
     const isUSMap = data.states.some(s => usStatePattern.test(s.state));
     console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
-    console.log('Data states:', data.states);
 
     const projection = isUSMap 
       ? d3.geoAlbersUsa()
@@ -102,23 +108,15 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
-      // Create a map of country names to their colors
-      const countryColors = new Map();
-      data.states.forEach(state => {
-        if (state.state.toLowerCase() === 'usa' || state.state.toLowerCase() === 'united states') {
-          countryColors.set('United States', '#ef4444'); // Red for USA
-        } else if (state.state.toLowerCase() === 'australia') {
-          countryColors.set('Australia', '#3b82f6'); // Blue for Australia
-        }
-      });
-      
       // Create an array to store all matching promises
-      const matchPromises = regions.features.map(async (d: any) => {
-        const geoName = d.properties.NAME || d.properties.name;
+      const matchPromises = regions.features.map(async (feature: any) => {
         const matches = await Promise.all(
-          data.states.map(s => fuzzyMatchCountry(s.state, geoName))
+          data.states.map(async (s) => {
+            const result = await fuzzyMatchCountry(s.state, feature);
+            return result;
+          })
         );
-        return matches.some(match => match);
+        return matches.find(m => m.isMatch) || { isMatch: false };
       });
 
       // Wait for all matching results
@@ -130,9 +128,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .data(regions.features)
         .join("path")
         .attr("d", path)
-        .attr("fill", (d: any) => {
-          const geoName = d.properties.NAME || d.properties.name;
-          return countryColors.get(geoName) || data.defaultFill || "#f3f3f3";
+        .attr("fill", (d: any, i: number) => {
+          return matchResults[i].isMatch 
+            ? (matchResults[i].color || data.highlightColor || "#ef4444")
+            : (data.defaultFill || "#f3f3f3");
         })
         .attr("stroke", "white")
         .attr("stroke-width", "0.5");
@@ -156,9 +155,9 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         })
         .attr("text-anchor", "middle")
         .attr("dy", ".35em")
-        .text((d: any) => {
+        .text((d: any, i: number) => {
           const geoName = d.properties.NAME || d.properties.name;
-          return countryColors.has(geoName) ? geoName : "";
+          return matchResults[i].isMatch ? geoName : "";
         })
         .attr("fill", "#000000")
         .attr("font-size", "14px");
