@@ -82,10 +82,15 @@ const Index = () => {
     // Clone the SVG to avoid modifying the displayed one
     const clonedSvg = svg.cloneNode(true) as SVGElement;
     
+    // Ensure all styles are inlined for export
+    const computedStyle = window.getComputedStyle(svg);
+    clonedSvg.style.backgroundColor = computedStyle.backgroundColor;
+    
     // Add XML declaration and SVG namespace
     const svgData = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' +
+      '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
       new XMLSerializer().serializeToString(clonedSvg)
-        .replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        .replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"');
 
     // Create blob with proper SVG MIME type
     const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
