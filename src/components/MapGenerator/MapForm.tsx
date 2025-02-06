@@ -2,22 +2,20 @@ import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import FileUpload from "./FileUpload";
 import { MapRequest } from "@/lib/types";
 
 interface MapFormProps {
-  onSubmit: (request: MapRequest & { detailLevel: string }) => void;
+  onSubmit: (request: MapRequest) => void;
 }
 
 const MapForm = ({ onSubmit }: MapFormProps) => {
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [detailLevel, setDetailLevel] = useState("110m");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ description, file, detailLevel });
+    onSubmit({ description, file });
   };
 
   return (
@@ -35,26 +33,7 @@ const MapForm = ({ onSubmit }: MapFormProps) => {
       
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">Optional: Upload sales data file</p>
-        <div className="text-xs text-amber-600 mb-2">Note: Country name column must be called "COUNTRY"</div>
         <FileUpload onFileSelect={(file) => setFile(file)} />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Map Detail Level</Label>
-        <RadioGroup value={detailLevel} onValueChange={setDetailLevel} className="flex flex-col space-y-2">
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="110m" id="r1" />
-            <Label htmlFor="r1">Low (1:110m)</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="50m" id="r2" />
-            <Label htmlFor="r2">Medium (1:50m)</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="10m" id="r3" />
-            <Label htmlFor="r3">High (1:10m)</Label>
-          </div>
-        </RadioGroup>
       </div>
       
       <Button type="submit" className="w-full">

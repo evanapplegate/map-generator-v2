@@ -40,13 +40,12 @@ const parseSimpleMapRequest = (description: string): MapData => {
 
 const Index = () => {
   const [mapData, setMapData] = useState<MapData | null>(null);
-  const [detailLevel, setDetailLevel] = useState("110m");
   const { toast } = useToast();
 
-  const handleMapRequest = async (request: MapRequest & { detailLevel: string }) => {
+  const handleMapRequest = async (request: MapRequest) => {
     try {
-      setDetailLevel(request.detailLevel);
       if (request.file) {
+        // Handle data-driven map
         const stateData = await processExcelFile(request.file);
         const sales = stateData.map(d => d.sales);
         
@@ -56,6 +55,7 @@ const Index = () => {
           minSales: Math.min(...sales),
         });
       } else {
+        // Handle simple text-based map
         const simpleMapData = parseSimpleMapRequest(request.description);
         setMapData(simpleMapData);
       }
@@ -109,7 +109,7 @@ const Index = () => {
           <div className="lg:col-span-2 space-y-6">
             {mapData && (
               <>
-                <MapVisualization data={mapData} detailLevel={detailLevel} />
+                <MapVisualization data={mapData} />
                 <div className="flex justify-end">
                   <div className="space-x-4">
                     <Button onClick={() => handleExport('svg')}>

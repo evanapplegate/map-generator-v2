@@ -1,7 +1,6 @@
 export interface MapRequest {
   description: string;
   file: File | null;
-  detailLevel?: string;
 }
 
 export interface StateData {
