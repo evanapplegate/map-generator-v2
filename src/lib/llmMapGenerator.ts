@@ -50,24 +50,26 @@ const validateResponse = async (jsonResponse: any, userRequest: string, apiKey: 
   const isWorldMap = userRequest.toLowerCase().includes('world') || 
                     /\b(countries|country)\b/i.test(userRequest);
 
-  const validationPrompt = `You are a data validation expert. Compare this JSON response with the original user request.
-Original request: "${userRequest}"
+  const validationPrompt = `You are a data validation expert. Analyze if this map data matches the user's requirements.
+User request: "${userRequest}"
 
-JSON response:
+Map data:
 ${JSON.stringify(jsonResponse, null, 2)}
 
 Check if:
-1. ${isWorldMap ? 'All country codes match ISO 3166-1 alpha-3 format' : 'All state codes in highlightColors match valid US state postal codes'}
-2. All colors are valid hex codes
-3. All requested ${isWorldMap ? 'countries' : 'states'} from the user's description are included
-4. The color scheme matches what was requested (e.g., if user asked for "blue USA", check if USA's color is a shade of blue)
-5. The labels match the requested entities
+1. The map type (${isWorldMap ? 'world' : 'US'}) matches the user's request
+2. All requested locations are included
+3. Colors match specific requests (e.g., if user asked for "blue USA", check if USA is blue)
+4. The format is correct:
+   - For world maps: ISO3 country codes
+   - For US maps: 2-letter state codes
+5. All colors are valid hex codes
 
-Respond with ONLY a JSON object in this format:
+Respond with ONLY a JSON object:
 {
   "isValid": boolean,
-  "issues": string[] (empty if valid),
-  "suggestions": string[] (empty if valid)
+  "issues": string[],
+  "suggestions": string[]
 }`;
 
   try {
@@ -107,7 +109,6 @@ export const generateMapInstructions = async (description: string, apiKey: strin
   try {
     console.log('Sending request to OpenAI:', description);
     
-    // Generate only 2 variations with different color schemes
     const variations = await Promise.all([0, 1].map(async (index) => {
       try {
         const completion = await openai.chat.completions.create({
@@ -137,13 +138,11 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           throw new Error('Invalid JSON response from OpenAI');
         }
 
-        // Validate the response structure
         if (!parsedResponse.states || !Array.isArray(parsedResponse.states)) {
           console.error('Invalid response structure:', parsedResponse);
           throw new Error('Invalid response structure from OpenAI');
         }
 
-        // Validate the response against user requirements
         const validation = await validateResponse(parsedResponse, description, apiKey);
         console.log('Validation result:', validation);
 
@@ -152,12 +151,11 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           throw new Error(`Invalid map data: ${validation.issues.join(', ')}`);
         }
 
-        // Convert the response to our MapData format
         return {
           states: parsedResponse.states.map((state: any) => ({
             state: state.state,
             postalCode: state.postalCode,
-            sales: 100 // Default value for highlighting
+            sales: 100
           })),
           maxSales: 100,
           minSales: 0,
