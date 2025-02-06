@@ -76,10 +76,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             return match;
           });
           
-          // If it's a highlighted state, use blue (#3b82f6), otherwise use the parsed default fill color
-          return regionData ? "#3b82f6" : parsedRequest.defaultFill;
+          // Use the highlightColor from the LLM response for highlighted states
+          return regionData ? (data.highlightColor || "#ef4444") : data.defaultFill || parsedRequest.defaultFill;
         })
-        .attr("stroke", "white")
+        .attr("stroke", data.borderColor || "white")
         .attr("stroke-width", "0.5px");
 
       // Draw bounds
@@ -87,7 +87,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", "white")
+        .attr("stroke", data.borderColor || "white")
         .attr("stroke-width", "1px");
 
       // Add labels for highlighted states
