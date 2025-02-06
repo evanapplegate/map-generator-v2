@@ -10,6 +10,7 @@ RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.
 
 The JSON must follow this exact format for world maps:
 {
+  "mapType": "world",
   "states": [
     { "state": "countryName", "postalCode": "ISO3" }
   ],
@@ -20,17 +21,17 @@ The JSON must follow this exact format for world maps:
   "borderColor": "#hexColor"
 }
 
-For US maps, use 2-letter state codes instead of ISO3.
-Example: For "blue USA", the response should include the full country name and correct ISO3 code:
+For US maps, use this format with 2-letter state codes:
 {
+  "mapType": "us",
   "states": [
-    { "state": "United States of America", "postalCode": "USA" }
+    { "state": "stateName", "postalCode": "ST" }
   ],
-  "defaultFill": "#D3D3D3",
+  "defaultFill": "#hexColor",
   "highlightColors": {
-    "USA": "#0000FF"
+    "ST": "#hexColor"
   },
-  "borderColor": "#FFFFFF"
+  "borderColor": "#hexColor"
 }`;
 
   const variations = [
@@ -47,23 +48,17 @@ const validateResponse = async (jsonResponse: any, userRequest: string, apiKey: 
     dangerouslyAllowBrowser: true
   });
 
-  const isWorldMap = userRequest.toLowerCase().includes('world') || 
-                    /\b(countries|country)\b/i.test(userRequest);
-
-  const validationPrompt = `You are a data validation expert. Analyze if this map data matches the user's requirements.
+  const validationPrompt = `You are a data validation expert. Validate this map data against the user's requirements.
 User request: "${userRequest}"
 
 Map data:
 ${JSON.stringify(jsonResponse, null, 2)}
 
-Check if:
-1. The map type (${isWorldMap ? 'world' : 'US'}) matches the user's request
-2. All requested locations are included
-3. Colors match specific requests (e.g., if user asked for "blue USA", check if USA is blue)
-4. The format is correct:
-   - For world maps: ISO3 country codes
-   - For US maps: 2-letter state codes
-5. All colors are valid hex codes
+Validate:
+1. Map type matches the request (world/us)
+2. All requested locations are included with correct names and codes
+3. Colors match specific requests (e.g., "blue USA" -> USA should be blue)
+4. Required format elements are present (mapType, states, defaultFill, highlightColors)
 
 Respond with ONLY a JSON object:
 {
