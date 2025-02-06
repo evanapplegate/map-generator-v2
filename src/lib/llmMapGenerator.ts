@@ -8,7 +8,6 @@ For US maps (when US states are mentioned), use US_states.geojson for state poly
 
 RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.`;
 
-  // Add variation-specific guidance
   const variations = [
     "Use vibrant, high-contrast colors for highlighting.",
     "Use pastel, soft colors for a gentle appearance.",
@@ -28,6 +27,54 @@ The JSON must follow this exact format:
   },
   "borderColor": "#hexColor"
 }`;
+};
+
+const validateResponse = async (jsonResponse: any, userRequest: string, apiKey: string) => {
+  const openai = new OpenAI({
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true
+  });
+
+  const validationPrompt = `You are a data validation expert. Compare this JSON response with the GeoJSON fields and the original user request.
+Original request: "${userRequest}"
+
+JSON response:
+${JSON.stringify(jsonResponse, null, 2)}
+
+Check if:
+1. All state codes in highlightColors match valid US state postal codes
+2. All colors are valid hex codes
+3. All requested states from the user's description are included
+4. The color scheme matches what was requested
+
+Respond with ONLY a JSON object in this format:
+{
+  "isValid": boolean,
+  "issues": string[] (empty if valid),
+  "suggestions": string[] (empty if valid)
+}`;
+
+  try {
+    const validation = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: validationPrompt }
+      ],
+      temperature: 0.3,
+    });
+
+    const validationResponse = validation.choices[0]?.message?.content;
+    if (!validationResponse) {
+      console.error('Empty validation response');
+      return { isValid: false, issues: ['Validation failed'] };
+    }
+
+    console.log('Validation response:', validationResponse);
+    return JSON.parse(validationResponse);
+  } catch (error) {
+    console.error('Validation error:', error);
+    return { isValid: false, issues: ['Validation failed'] };
+  }
 };
 
 export const generateMapInstructions = async (description: string, apiKey: string): Promise<MapData[]> => {
@@ -78,6 +125,15 @@ export const generateMapInstructions = async (description: string, apiKey: strin
         if (!parsedResponse.states || !Array.isArray(parsedResponse.states)) {
           console.error('Invalid response structure:', parsedResponse);
           throw new Error('Invalid response structure from OpenAI');
+        }
+
+        // Validate the response against GeoJSON and user requirements
+        const validation = await validateResponse(parsedResponse, description, apiKey);
+        console.log('Validation result:', validation);
+
+        if (!validation.isValid) {
+          console.error('Validation issues:', validation.issues);
+          throw new Error(`Invalid map data: ${validation.issues.join(', ')}`);
         }
 
         // Convert the response to our MapData format
