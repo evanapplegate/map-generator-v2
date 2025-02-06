@@ -7,6 +7,7 @@ import { generateMapInstructions } from "@/lib/llmMapGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { saveAs } from 'file-saver';
 
 const Index = () => {
   const [mapData, setMapData] = useState<MapData | null>(null);
@@ -177,3 +178,4 @@ const Index = () => {
 };
 
 export default Index;
+
