@@ -55,6 +55,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     dataPromise.then(([regions, bounds]: [any, any]) => {
       // Parse the map description to get colors and highlighted states
       const parsedRequest = parseMapDescription(data.states[0]?.state || "");
+      console.log('Parsed request:', parsedRequest);
       
       // Draw regions (states or countries)
       svg.append("g")
@@ -75,9 +76,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             return match;
           });
           
-          return regionData ? "#3b82f6" : parsedRequest.defaultFill; // Blue for highlighted states, parsed default color for others
+          // If it's a highlighted state, use blue (#3b82f6), otherwise use the parsed default fill color
+          return regionData ? "#3b82f6" : parsedRequest.defaultFill;
         })
-        .attr("stroke", parsedRequest.borderColor)
+        .attr("stroke", "white")
         .attr("stroke-width", "0.5px");
 
       // Draw bounds
@@ -85,7 +87,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", parsedRequest.borderColor)
+        .attr("stroke", "white")
         .attr("stroke-width", "1px");
 
       // Add labels for highlighted states
@@ -106,9 +108,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           );
           return matchingState ? matchingState.postalCode : "";
         })
-        .attr("fill", parsedRequest.labelColor)
+        .attr("fill", "black")
         .attr("font-size", "14px");
 
+      // Add tooltips
       const tooltip = d3.select("body")
         .append("div")
         .attr("class", "tooltip")
