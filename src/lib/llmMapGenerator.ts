@@ -3,7 +3,7 @@ import { MapData } from './types';
 
 const systemPrompt = `You are a D3.js map visualization expert. Convert the user's map request into specific D3 visualization instructions.
 For world maps (when countries are mentioned), use countries.geojson for country polygons and country_bounds.geojson for national boundaries.
-Return a JSON object with:
+RESPOND ONLY WITH A VALID JSON OBJECT IN THIS EXACT FORMAT:
 {
   "states": [
     { "state": "countryName", "postalCode": "countryCode" }
@@ -14,7 +14,7 @@ Return a JSON object with:
 }
 
 For US maps (when US states are mentioned), use US_states.geojson for state polygons and US_bounds.geojson for national boundaries.
-Return a JSON object with:
+RESPOND ONLY WITH A VALID JSON OBJECT IN THIS EXACT FORMAT:
 {
   "states": [
     { "state": "stateName", "postalCode": "stateCode" }
@@ -22,7 +22,9 @@ Return a JSON object with:
   "defaultFill": "#hexColor",
   "highlightColor": "#hexColor",
   "borderColor": "#hexColor"
-}`;
+}
+
+DO NOT INCLUDE ANY ADDITIONAL TEXT, MARKDOWN, OR FORMATTING. RETURN ONLY THE JSON OBJECT.`;
 
 export const generateMapInstructions = async (description: string, apiKey: string): Promise<MapData> => {
   if (!apiKey) {
@@ -52,9 +54,8 @@ export const generateMapInstructions = async (description: string, apiKey: strin
 
     console.log('OpenAI response:', response);
     
-    // Clean up the response by removing markdown formatting
-    const cleanResponse = response.replace(/```json\n|\n```/g, '');
-    const parsedResponse = JSON.parse(cleanResponse);
+    // Since we're now requesting pure JSON, we can parse directly
+    const parsedResponse = JSON.parse(response);
 
     // Convert the response to our MapData format
     const mapData: MapData = {
