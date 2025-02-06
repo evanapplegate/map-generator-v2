@@ -68,12 +68,12 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke", "white")
         .attr("stroke-width", "0.5px");
 
-      // Draw bounds
+      // Draw bounds with white 1px stroke
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", "#000")
+        .attr("stroke", "white")
         .attr("stroke-width", "1px");
 
       // Add tooltips
