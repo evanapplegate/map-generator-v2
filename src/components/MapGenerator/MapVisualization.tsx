@@ -14,20 +14,13 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const { showTooltip, hideTooltip } = useTooltip();
   const width = 960;
-  const height = 600;
+  const height = 500;
   const { path } = useMapProjection(width, height);
 
   useEffect(() => {
-    console.log('MapVisualization data:', data);
-    console.log('svgRef.current:', svgRef.current);
-    
-    if (!data || !svgRef.current) {
-      console.log('Missing data or svgRef, returning early');
-      return;
-    }
+    if (!data || !svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
-    console.log('Creating SVG with dimensions:', width, height);
     
     // Clear existing content
     svg.selectAll("*").remove();
@@ -37,36 +30,25 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height].join(" "))
-      .attr("style", "max-width: 100%; height: auto;");
+      .style("max-width", "100%")
+      .style("height", "auto");
 
-    // Create a single group for all map elements
-    const mapGroup = svg.append("g").attr("class", "map-group");
-    console.log('Map group created:', mapGroup.node());
+    // Create base group
+    svg.append("g")
+      .attr("class", "map-group");
 
-    // Create groups for fills and boundaries
-    mapGroup.append("g").attr("class", "country-fills");
-    mapGroup.append("g").attr("class", "country-boundaries");
-    console.log('Created fill and boundary groups');
+  }, [data, width, height]);
 
-    return () => {
-      svg.selectAll("*").remove();
-    };
-  }, [data, path, width, height]);
-
-  if (!data || !svgRef.current) {
-    console.log('Rendering null due to missing data or svgRef');
-    return null;
-  }
+  if (!data || !svgRef.current) return null;
 
   const handleHover = (event: any, d: any) => {
     const countryData = data.states.find(s => s.state === d.properties.name);
     showTooltip(event, countryData);
   };
 
-  // Only render the components if we have both data and svgRef
   return (
     <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
-      <svg ref={svgRef} className="w-full">
+      <svg ref={svgRef}>
         {svgRef.current && (
           <>
             <CountryFills
