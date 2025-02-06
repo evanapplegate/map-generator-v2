@@ -12,10 +12,12 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
 
   const handleExport = async (format: 'svg' | 'pdf') => {
     try {
-      // Wait a brief moment to ensure the map is fully rendered
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait longer to ensure the map is fully rendered, especially for higher detail levels
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const svg = document.querySelector('.map-visualization svg');
+      const mapContainer = document.querySelector('.map-visualization');
+      const svg = mapContainer?.querySelector('svg');
+      
       if (!svg) {
         throw new Error('SVG element not found');
       }
@@ -23,6 +25,12 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
       if (format === 'svg') {
         // Clone the SVG to avoid modifying the displayed one
         const clonedSvg = svg.cloneNode(true) as SVGElement;
+        
+        // Copy all computed styles from the original SVG
+        const styles = window.getComputedStyle(svg);
+        const cssText = Array.from(styles).reduce((str, property) => {
+          return `${str}${property}:${styles.getPropertyValue(property)};`;
+        }, '');
         
         // Ensure viewBox and dimensions are preserved
         const viewBox = svg.getAttribute('viewBox');
@@ -33,7 +41,20 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
         // Set explicit width and height
         clonedSvg.setAttribute('width', '960');
         clonedSvg.setAttribute('height', '600');
+        clonedSvg.setAttribute('style', cssText);
         
+        // Ensure all paths and elements are included
+        const paths = clonedSvg.querySelectorAll('path');
+        paths.forEach(path => {
+          const originalPath = svg.querySelector(`path[d="${path.getAttribute('d')}"]`);
+          if (originalPath) {
+            const styles = window.getComputedStyle(originalPath);
+            path.setAttribute('style', Array.from(styles).reduce((str, property) => {
+              return `${str}${property}:${styles.getPropertyValue(property)};`;
+            }, ''));
+          }
+        });
+
         const svgData = new XMLSerializer().serializeToString(clonedSvg);
         const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
         saveAs(blob, 'world-sales-map.svg');
