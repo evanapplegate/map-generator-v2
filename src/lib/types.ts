@@ -1,6 +1,7 @@
 export interface MapRequest {
   description: string;
   file: File | null;
+  apiKey?: string;
 }
 
 export interface StateData {
