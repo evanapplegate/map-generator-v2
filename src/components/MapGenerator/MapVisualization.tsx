@@ -53,7 +53,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
-      // Draw regions - now without stroke
+      // Draw regions - STRICTLY NO STROKE
       svg.append("g")
         .selectAll("path")
         .data(regions.features)
@@ -71,12 +71,12 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           return data.defaultFill || "#f3f3f3";
         });
 
-      // Draw bounds with stroke
+      // Draw bounds - STRICTLY 1PX WHITE STROKE
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", data.borderColor || "#ffffff")
+        .attr("stroke", "#ffffff")
         .attr("stroke-width", "1");
 
       // Add labels
