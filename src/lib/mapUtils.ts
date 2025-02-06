@@ -51,10 +51,10 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
 };
 
 export const getColorScale = (minSales: number, maxSales: number) => {
-  console.log('Creating color scale:', { minSales, maxSales });
-  return d3.scaleLinear<string>()
+  console.log('Creating color scale with range:', { minSales, maxSales });
+  return d3.scaleSequential()
     .domain([minSales, maxSales])
-    .range(['#90EE90', '#006400']); // Light green to dark green
+    .interpolator(d3.interpolate('#90EE90', '#006400')); // Light green to dark green
 };
 
 export const formatSalesNumber = (sales: number): string => {

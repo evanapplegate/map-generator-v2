@@ -11,13 +11,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    console.log('MapVisualization - Raw data received:', data);
     if (!data || !svgRef.current) {
       console.log('No data or SVG ref available');
       return;
     }
-
-    console.log('MapVisualization - States data:', data.states);
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -75,9 +72,18 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
               ? s.state === d.properties.name
               : s.state.toLowerCase() === geoName.toLowerCase();
           });
-          return regionData ? colorScale(regionData.sales) : "#eee";
+          
+          if (regionData) {
+            console.log('Found data for region:', {
+              name: geoName,
+              sales: regionData.sales,
+              color: colorScale(regionData.sales)
+            });
+            return colorScale(regionData.sales);
+          }
+          return "#f3f3f3"; // Light gray for no data
         })
-        .attr("stroke", "none")  // No stroke for regions
+        .attr("stroke", "none")
         .attr("stroke-width", "0");
 
       // Draw bounds with 1px white stroke
