@@ -68,7 +68,7 @@ const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps)
   }, [data, detailLevel]);
 
   return (
-    <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
+    <div className="map-visualization w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
       <svg ref={svgRef} className="w-full" />
     </div>
   );
