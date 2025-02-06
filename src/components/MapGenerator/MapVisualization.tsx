@@ -144,7 +144,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke", "#ffffff")
         .attr("stroke-width", "1");
 
-      // Update labels
+      // Update labels - Only show labels for matched regions
       svg.append("g")
         .selectAll("text")
         .data(regions.features)
@@ -156,8 +156,11 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("text-anchor", "middle")
         .attr("dy", ".35em")
         .text((d: any, i: number) => {
+          // Only show label if this region was explicitly matched
+          if (!matchResults[i].isMatch) return "";
           const geoName = d.properties.NAME || d.properties.name;
-          return matchResults[i].isMatch ? geoName : "";
+          // Clean up the name by removing any extra text after dots or commas
+          return geoName.split(/[.,]/)[0].trim();
         })
         .attr("fill", "#000000")
         .attr("font-size", "14px");
