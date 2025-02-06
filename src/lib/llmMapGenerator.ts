@@ -39,7 +39,7 @@ export const generateMapInstructions = async (description: string, apiKey: strin
     console.log('Sending request to OpenAI:', description);
     
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
@@ -51,7 +51,10 @@ export const generateMapInstructions = async (description: string, apiKey: strin
     if (!response) throw new Error('No response from OpenAI');
 
     console.log('OpenAI response:', response);
-    const parsedResponse = JSON.parse(response);
+    
+    // Clean up the response by removing markdown formatting
+    const cleanResponse = response.replace(/```json\n|\n```/g, '');
+    const parsedResponse = JSON.parse(cleanResponse);
 
     // Convert the response to our MapData format
     const mapData: MapData = {
