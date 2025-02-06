@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import * as topojson from 'topojson-client';
 import { MapData } from '@/lib/types';
 import { getColorScale, formatSalesNumber } from '@/lib/mapUtils';
 
@@ -26,66 +25,74 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    const projection = d3.geoEqualEarth()
-      .scale(180)
+    const projection = d3.geoAlbersUsa()
+      .scale(1000)
       .translate([width / 2, height / 2]);
 
     const path = d3.geoPath().projection(projection);
     const colorScale = getColorScale(data.minSales, data.maxSales);
 
-    // Load world GeoJSON data
-    d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
-      .then((world: any) => {
-        const countries = topojson.feature(world, world.objects.countries);
-        
-        // Create map
-        svg.append("g")
-          .selectAll("path")
-          .data(countries.features)
-          .join("path")
-          .attr("d", path)
-          .attr("fill", (d: any) => {
-            const countryData = data.states.find(s => s.state === d.properties.name);
-            return countryData ? colorScale(countryData.sales) : "#eee";
-          })
-          .attr("stroke", "white")
-          .attr("stroke-width", "0.5px");
+    // Load US states GeoJSON data
+    Promise.all([
+      d3.json("/geojson/US_states.geojson"),
+      d3.json("/geojson/US_bounds.geojson")
+    ]).then(([states, bounds]: [any, any]) => {
+      // Draw state boundaries
+      svg.append("g")
+        .selectAll("path")
+        .data(states.features)
+        .join("path")
+        .attr("d", path)
+        .attr("fill", (d: any) => {
+          const stateData = data.states.find(s => s.state === d.properties.name);
+          return stateData ? colorScale(stateData.sales) : "#eee";
+        })
+        .attr("stroke", "white")
+        .attr("stroke-width", "0.5px");
 
-        // Add tooltips
-        const tooltip = d3.select("body")
-          .append("div")
-          .attr("class", "tooltip")
-          .style("position", "absolute")
-          .style("visibility", "hidden")
-          .style("background-color", "white")
-          .style("padding", "10px")
-          .style("border-radius", "5px")
-          .style("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
+      // Draw US bounds
+      svg.append("path")
+        .datum(bounds)
+        .attr("d", path)
+        .attr("fill", "none")
+        .attr("stroke", "#000")
+        .attr("stroke-width", "1px");
 
-        svg.selectAll("path")
-          .on("mouseover", (event, d: any) => {
-            const countryData = data.states.find(s => s.state === d.properties.name);
-            if (countryData) {
-              tooltip
-                .style("visibility", "visible")
-                .html(`
-                  <strong>${countryData.state}</strong><br/>
-                  GDP: ${formatSalesNumber(countryData.sales)}
-                `);
-            }
-          })
-          .on("mousemove", (event) => {
+      // Add tooltips
+      const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("visibility", "hidden")
+        .style("background-color", "white")
+        .style("padding", "10px")
+        .style("border-radius", "5px")
+        .style("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
+
+      svg.selectAll("path")
+        .on("mouseover", (event, d: any) => {
+          const stateData = data.states.find(s => s.state === d.properties.name);
+          if (stateData) {
             tooltip
-              .style("top", (event.pageY - 10) + "px")
-              .style("left", (event.pageX + 10) + "px");
-          })
-          .on("mouseout", () => {
-            tooltip.style("visibility", "hidden");
-          });
-      })
-      .catch(error => {
-        console.error('Error loading world map data:', error);
-      });
+              .style("visibility", "visible")
+              .html(`
+                <strong>${stateData.state}</strong><br/>
+                Sales: ${formatSalesNumber(stateData.sales)}
+              `);
+          }
+        })
+        .on("mousemove", (event) => {
+          tooltip
+            .style("top", (event.pageY - 10) + "px")
+            .style("left", (event.pageX + 10) + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.style("visibility", "hidden");
+        });
+    })
+    .catch(error => {
+      console.error('Error loading map data:', error);
+    });
 
     return () => {
       d3.select("body").selectAll(".tooltip").remove();
