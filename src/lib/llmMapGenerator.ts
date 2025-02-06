@@ -12,8 +12,6 @@ RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.`;
   const variations = [
     "Use vibrant, high-contrast colors for highlighting.",
     "Use pastel, soft colors for a gentle appearance.",
-    "Use earth tones and natural colors.",
-    "Use modern, tech-inspired colors (blues, cyans, etc)."
   ];
 
   return `${basePrompt}
@@ -46,43 +44,65 @@ export const generateMapInstructions = async (description: string, apiKey: strin
   try {
     console.log('Sending request to OpenAI:', description);
     
-    // Generate 4 variations with different color schemes
-    const variations = await Promise.all([0, 1, 2, 3].map(async (index) => {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          { role: "system", content: getSystemPrompt(index) },
-          { role: "user", content: description }
-        ],
-        temperature: 0.8,
-      });
+    // Generate only 2 variations with different color schemes
+    const variations = await Promise.all([0, 1].map(async (index) => {
+      try {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [
+            { role: "system", content: getSystemPrompt(index) },
+            { role: "user", content: description }
+          ],
+          temperature: 0.8,
+        });
 
-      const response = completion.choices[0]?.message?.content;
-      if (!response) throw new Error('No response from OpenAI');
+        const response = completion.choices[0]?.message?.content;
+        if (!response) {
+          console.error('Empty response from OpenAI');
+          throw new Error('No response from OpenAI');
+        }
 
-      console.log(`OpenAI response for variation ${index}:`, response);
-      
-      const parsedResponse = JSON.parse(response);
+        console.log(`OpenAI raw response for variation ${index}:`, response);
+        
+        let parsedResponse;
+        try {
+          parsedResponse = JSON.parse(response);
+          console.log(`Parsed response for variation ${index}:`, parsedResponse);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          console.error('Invalid JSON response:', response);
+          throw new Error('Invalid JSON response from OpenAI');
+        }
 
-      // Convert the response to our MapData format
-      return {
-        states: parsedResponse.states.map((state: any) => ({
-          state: state.state,
-          postalCode: state.postalCode,
-          sales: 100 // Default value for highlighting
-        })),
-        maxSales: 100,
-        minSales: 0,
-        defaultFill: parsedResponse.defaultFill,
-        borderColor: parsedResponse.borderColor,
-        highlightColors: parsedResponse.highlightColors // Now using the object of colors
-      };
+        // Validate the response structure
+        if (!parsedResponse.states || !Array.isArray(parsedResponse.states)) {
+          console.error('Invalid response structure:', parsedResponse);
+          throw new Error('Invalid response structure from OpenAI');
+        }
+
+        // Convert the response to our MapData format
+        return {
+          states: parsedResponse.states.map((state: any) => ({
+            state: state.state,
+            postalCode: state.postalCode,
+            sales: 100 // Default value for highlighting
+          })),
+          maxSales: 100,
+          minSales: 0,
+          defaultFill: parsedResponse.defaultFill,
+          borderColor: parsedResponse.borderColor,
+          highlightColors: parsedResponse.highlightColors
+        };
+      } catch (variationError) {
+        console.error(`Error generating variation ${index}:`, variationError);
+        throw variationError;
+      }
     }));
 
     console.log('Generated map variations:', variations);
     return variations;
   } catch (error) {
-    console.error('Error generating map instructions:', error);
+    console.error('Error in generateMapInstructions:', error);
     throw error;
   }
 };
