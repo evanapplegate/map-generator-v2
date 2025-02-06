@@ -81,8 +81,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           
           return regionData ? (data.highlightColor || "#ef4444") : data.defaultFill || parsedRequest.defaultFill;
         })
-        .attr("stroke", data.borderColor || "#ffffff")
-        .attr("stroke-width", "0.5");  // Force stroke-width for all polygons
+        .attr("stroke", "none");  // Remove stroke from polygons
 
       // Draw bounds with explicit white stroke
       svg.append("path")
