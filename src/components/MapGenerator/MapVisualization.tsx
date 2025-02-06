@@ -27,25 +27,31 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     }
 
     const svg = d3.select(svgRef.current);
+    console.log('Creating SVG with dimensions:', width, height);
+    
+    // Clear existing content
     svg.selectAll("*").remove();
 
+    // Set up the SVG
     svg
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
-    
-    const mapGroup = svg.append("g");
-    console.log('Map group created');
 
-    // Create fills and boundaries
-    const fillsGroup = mapGroup.append("g").attr("class", "country-fills");
-    const boundariesGroup = mapGroup.append("g").attr("class", "country-boundaries");
+    // Create a single group for all map elements
+    const mapGroup = svg.append("g").attr("class", "map-group");
+    console.log('Map group created:', mapGroup.node());
+
+    // Create groups for fills and boundaries
+    mapGroup.append("g").attr("class", "country-fills");
+    mapGroup.append("g").attr("class", "country-boundaries");
+    console.log('Created fill and boundary groups');
 
     return () => {
       svg.selectAll("*").remove();
     };
-  }, [data, path]);
+  }, [data, path, width, height]);
 
   if (!data || !svgRef.current) {
     console.log('Rendering null due to missing data or svgRef');
@@ -57,23 +63,26 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     showTooltip(event, countryData);
   };
 
+  // Only render the components if we have both data and svgRef
   return (
     <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
       <svg ref={svgRef} className="w-full">
-        <g>
-          <CountryFills
-            mapGroup={d3.select(svgRef.current).select("g")}
-            path={path}
-            data={data}
-            onHover={handleHover}
-            onLeave={hideTooltip}
-          />
-          <CountryBoundaries
-            mapGroup={d3.select(svgRef.current).select("g")}
-            path={path}
-            mapType={data.mapType}
-          />
-        </g>
+        {svgRef.current && (
+          <>
+            <CountryFills
+              mapGroup={d3.select(svgRef.current).select(".map-group")}
+              path={path}
+              data={data}
+              onHover={handleHover}
+              onLeave={hideTooltip}
+            />
+            <CountryBoundaries
+              mapGroup={d3.select(svgRef.current).select(".map-group")}
+              path={path}
+              mapType={data.mapType}
+            />
+          </>
+        )}
       </svg>
     </div>
   );
