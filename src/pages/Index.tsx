@@ -7,13 +7,16 @@ import { generateMapInstructions } from "@/lib/llmMapGenerator";
 import { useToast } from "@/components/ui/use-toast";
 import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
   const [mapData, setMapData] = useState<MapData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleMapRequest = async (request: MapRequest) => {
     try {
+      setIsLoading(true);
       console.log('Handling map request:', request);
       
       if (request.file) {
@@ -63,6 +66,8 @@ const Index = () => {
         description: error instanceof Error ? error.message : "Failed to process request",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -104,7 +109,15 @@ const Index = () => {
           </div>
           
           <div className="lg:col-span-2 space-y-6">
-            {mapData && (
+            {isLoading ? (
+              <div className="bg-white p-6 rounded-lg shadow-lg space-y-4">
+                <Skeleton className="h-[600px] w-full rounded-lg animate-pulse" />
+                <div className="flex justify-end space-x-4">
+                  <Skeleton className="h-10 w-24" />
+                  <Skeleton className="h-10 w-24" />
+                </div>
+              </div>
+            ) : mapData && (
               <>
                 <MapVisualization data={mapData} />
                 <div className="flex justify-end">
