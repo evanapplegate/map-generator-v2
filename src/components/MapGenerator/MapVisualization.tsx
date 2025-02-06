@@ -53,7 +53,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
-      // Draw regions
+      // Draw regions - now without stroke
       svg.append("g")
         .selectAll("path")
         .data(regions.features)
@@ -66,20 +66,17 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             s.postalCode === stateName
           );
           if (matchedState) {
-            // Use the specific color for this state/country from highlightColors
             return data.highlightColors?.[matchedState.postalCode] || data.highlightColor || "#ef4444";
           }
           return data.defaultFill || "#f3f3f3";
-        })
-        .attr("stroke", data.borderColor || "white")
-        .attr("stroke-width", "0.5");
+        });
 
-      // Draw bounds
+      // Draw bounds with stroke
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", "#ffffff")
+        .attr("stroke", data.borderColor || "#ffffff")
         .attr("stroke-width", "1");
 
       // Add labels
