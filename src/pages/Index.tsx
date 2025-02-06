@@ -4,7 +4,7 @@ import MapVisualization from "@/components/MapGenerator/MapVisualization";
 import { MapRequest, MapData } from "@/lib/types";
 import { processExcelFile } from "@/lib/mapUtils";
 import { generateMapInstructions } from "@/lib/llmMapGenerator";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,6 +76,11 @@ const Index = () => {
     const svg = document.querySelector('svg');
     if (!svg) {
       console.error('No SVG element found for export');
+      toast({
+        title: "Export Failed",
+        description: "No SVG element found to export",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -91,6 +96,18 @@ const Index = () => {
       '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
       new XMLSerializer().serializeToString(clonedSvg)
         .replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"');
+
+    // Check SVG data size
+    const svgSize = new Blob([svgData]).size;
+    if (svgSize < 1024) { // 1KB minimum size check
+      console.error('Generated SVG is suspiciously small:', svgSize, 'bytes');
+      toast({
+        title: "Export Failed",
+        description: "Generated SVG appears to be invalid or empty",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Create blob with proper SVG MIME type
     const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
