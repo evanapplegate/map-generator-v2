@@ -8,11 +8,13 @@ import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
 
 const parseSimpleMapRequest = (description: string): MapData => {
+  console.log('Parsing simple map request:', description);
   const defaultFill = "#f3f4f6"; // light gray
   const highlightColor = "#ef4444"; // red
   
   // Extract state codes (2 letter codes)
   const stateMatches: string[] = description.match(/\b[A-Z]{2}\b/g) || [];
+  console.log('Matched state codes:', stateMatches);
   
   // Create base state data with explicit type
   const states: Array<{ state: string; postalCode: string; sales: number }> = [
@@ -31,11 +33,13 @@ const parseSimpleMapRequest = (description: string): MapData => {
     }
   });
 
-  return {
+  const result = {
     states,
     maxSales: 100,
     minSales: 0
   };
+  console.log('Simple map request result:', result);
+  return result;
 };
 
 const Index = () => {
@@ -44,19 +48,25 @@ const Index = () => {
 
   const handleMapRequest = async (request: MapRequest) => {
     try {
+      console.log('Handling map request:', request);
       if (request.file) {
         // Handle data-driven map
+        console.log('Processing file-based request');
         const stateData = await processExcelFile(request.file);
         const sales = stateData.map(d => d.sales);
         
-        setMapData({
+        const newMapData = {
           states: stateData,
           maxSales: Math.max(...sales),
           minSales: Math.min(...sales),
-        });
+        };
+        console.log('Setting new map data:', newMapData);
+        setMapData(newMapData);
       } else {
         // Handle simple text-based map
+        console.log('Processing text-based request');
         const simpleMapData = parseSimpleMapRequest(request.description);
+        console.log('Setting simple map data:', simpleMapData);
         setMapData(simpleMapData);
       }
 
@@ -65,6 +75,7 @@ const Index = () => {
         description: "Map generated successfully!",
       });
     } catch (error) {
+      console.error('Error handling map request:', error);
       toast({
         title: "Error",
         description: "Failed to process request",
@@ -74,8 +85,12 @@ const Index = () => {
   };
 
   const handleExport = (format: 'svg' | 'pdf') => {
+    console.log('Exporting map as:', format);
     const svg = document.querySelector('svg');
-    if (!svg) return;
+    if (!svg) {
+      console.error('No SVG element found for export');
+      return;
+    }
 
     if (format === 'svg') {
       const svgData = new XMLSerializer().serializeToString(svg);

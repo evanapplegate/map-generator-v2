@@ -15,6 +15,7 @@ const MapForm = ({ onSubmit }: MapFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('MapForm - Submitting request:', { description, file: file?.name });
     onSubmit({ description, file });
   };
 

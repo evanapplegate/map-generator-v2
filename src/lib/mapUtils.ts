@@ -7,17 +7,33 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
+        console.log('Processing Excel file:', file.name);
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = utils.sheet_to_json(worksheet);
+        console.log('Raw Excel data:', jsonData);
         
         // Map the Excel columns to our expected format
-        const stateData: StateData[] = jsonData.map((row: any) => ({
-          state: row.NAME || row.country || row.state,
-          postalCode: row.NAME || row.country_code || row.state,
-          sales: parseFloat(row.gdp_per_capita || row.gdp || row.sales) || 0
-        }));
+        const stateData: StateData[] = jsonData.map((row: any) => {
+          const countryName = row.COUNTRY || row.Country || row.country;
+          const gdpValue = parseFloat(row.gdp_per_capita || row.gdp || row.GDP || row.sales) || 0;
+          
+          console.log('Processing row:', { 
+            original: row,
+            mapped: {
+              state: countryName,
+              postalCode: countryName,
+              sales: gdpValue
+            }
+          });
+          
+          return {
+            state: countryName,
+            postalCode: countryName,
+            sales: gdpValue
+          };
+        });
         
         console.log('Processed Excel data:', stateData);
         resolve(stateData);
@@ -35,6 +51,7 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
 };
 
 export const getColorScale = (minSales: number, maxSales: number) => {
+  console.log('Creating color scale:', { minSales, maxSales });
   return d3.scaleLinear<string>()
     .domain([minSales, maxSales])
     .range(['#90EE90', '#006400']); // Light green to dark green

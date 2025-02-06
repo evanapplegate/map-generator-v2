@@ -11,6 +11,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
+    console.log('MapVisualization - Received data:', data);
     if (!data || !svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
@@ -27,6 +28,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
     // Determine if we're showing a US map or world map based on the data
     const isUSMap = data.states.some(s => s.postalCode?.length === 2);
+    console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
 
     const projection = isUSMap 
       ? d3.geoAlbersUsa()
@@ -51,6 +53,11 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(([regions, bounds]: [any, any]) => {
+      console.log('Loaded GeoJSON data:', { 
+        regionsFeatures: regions.features.length,
+        bounds: bounds
+      });
+
       // Draw region boundaries (states or countries)
       svg.append("g")
         .selectAll("path")
@@ -58,12 +65,25 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .join("path")
         .attr("d", path)
         .attr("fill", (d: any) => {
-          const regionData = data.states.find(s => 
-            isUSMap 
+          const regionData = data.states.find(s => {
+            const match = isUSMap 
               ? s.state === d.properties.name
-              : s.postalCode === d.properties.ISO_A2
-          );
-          return regionData ? colorScale(regionData.sales) : "#eee";
+              : s.state === (d.properties.NAME || d.properties.name);
+            if (match) {
+              console.log('Found matching region:', {
+                feature: d.properties,
+                stateData: s
+              });
+            }
+            return match;
+          });
+          const color = regionData ? colorScale(regionData.sales) : "#eee";
+          console.log('Region color:', {
+            region: d.properties.name || d.properties.NAME,
+            sales: regionData?.sales,
+            color
+          });
+          return color;
         })
         .attr("stroke", "white")
         .attr("stroke-width", "0.5px");
@@ -92,9 +112,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           const regionData = data.states.find(s => 
             isUSMap 
               ? s.state === d.properties.name
-              : s.postalCode === d.properties.ISO_A2
+              : s.state === (d.properties.NAME || d.properties.name)
           );
           if (regionData) {
+            console.log('Tooltip shown for:', regionData);
             tooltip
               .style("visibility", "visible")
               .html(`
