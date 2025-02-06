@@ -31,7 +31,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    // Determine if we're showing a US map or world map based on the data
     const isUSMap = data.states.some(s => s.postalCode?.length === 2);
     console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
 
@@ -46,7 +45,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     const path = d3.geoPath().projection(projection);
     const colorScale = getColorScale(data.minSales, data.maxSales);
 
-    // Load appropriate GeoJSON data based on map type
     const dataPromise = isUSMap
       ? Promise.all([
           d3.json("/geojson/US_states.geojson"),
@@ -63,39 +61,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         bounds: bounds
       });
 
-      // Log all country names from GeoJSON for debugging
-      console.log('Available countries in GeoJSON:', 
-        regions.features.map((f: any) => {
-          const name = f.properties?.NAME || f.properties?.name;
-          console.log('GeoJSON country:', { name, properties: f.properties });
-          return { 
-            name,
-            matched: data.states.some(s => s.state?.toLowerCase() === name?.toLowerCase())
-          };
-        })
-      );
-
-      // Log all countries from uploaded data
-      console.log('Countries from uploaded data:', 
-        data.states.map(s => {
-          console.log('Processing state data:', s);
-          return {
-            country: s.state,
-            foundMatch: regions.features.some((f: any) => {
-              const geoName = f.properties?.NAME || f.properties?.name;
-              const match = s.state?.toLowerCase() === geoName?.toLowerCase();
-              console.log('Matching attempt:', { 
-                dataCountry: s.state, 
-                geoJsonCountry: geoName,
-                matched: match 
-              });
-              return match;
-            })
-          };
-        })
-      );
-
-      // Draw region boundaries (states or countries)
+      // Draw regions (states or countries) with no stroke
       svg.append("g")
         .selectAll("path")
         .data(regions.features)
@@ -103,50 +69,18 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("d", path)
         .attr("fill", (d: any) => {
           const geoName = d.properties?.NAME || d.properties?.name;
-          console.log('Processing region for coloring:', { 
-            properties: d.properties,
-            geoName
-          });
-          
-          const regionData = data.states.find(s => {
-            if (!s.state || !geoName) {
-              console.log('Missing data for matching:', { state: s.state, geoName });
-              return false;
-            }
-            const match = isUSMap 
-              ? s.state === d.properties.name
-              : s.state.toLowerCase() === geoName.toLowerCase();
-            if (match) {
-              console.log('Found matching region:', {
-                feature: d.properties,
-                stateData: s
-              });
-            }
-            return match;
-          });
-          
-          const color = regionData ? colorScale(regionData.sales) : "#eee";
-          console.log('Region color:', {
-            region: geoName,
-            sales: regionData?.sales,
-            color
-          });
-          return color;
-        })
-        .attr("stroke", (d: any) => {
-          const geoName = d.properties?.NAME || d.properties?.name;
           const regionData = data.states.find(s => {
             if (!s.state || !geoName) return false;
             return isUSMap 
               ? s.state === d.properties.name
               : s.state.toLowerCase() === geoName.toLowerCase();
           });
-          // Only add stroke if there's no fill (no data)
-          return regionData ? "none" : "white";
+          return regionData ? colorScale(regionData.sales) : "#eee";
         })
-        .attr("stroke-width", "0.5px");
+        .attr("stroke", "none")  // No stroke for regions
+        .attr("stroke-width", "0");
 
-      // Draw bounds with white 1px stroke
+      // Draw bounds with 1px white stroke
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
@@ -154,7 +88,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke", "white")
         .attr("stroke-width", "1px");
 
-      // Add tooltips
       const tooltip = d3.select("body")
         .append("div")
         .attr("class", "tooltip")
