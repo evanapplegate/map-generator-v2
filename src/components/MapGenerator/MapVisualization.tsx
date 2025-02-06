@@ -25,17 +25,22 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     // Clear existing content
     svg.selectAll("*").remove();
 
-    // Set up the SVG
+    // Set up the SVG with explicit dimensions
     svg
       .attr("width", width)
       .attr("height", height)
-      .attr("viewBox", [0, 0, width, height].join(" "))
-      .style("max-width", "100%")
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .style("width", "100%")
       .style("height", "auto");
 
-    // Create base group
-    svg.append("g")
-      .attr("class", "map-group");
+    // Create base group with transform
+    const mapGroup = svg.append("g")
+      .attr("class", "map-group")
+      .attr("transform", `translate(0,0)`);
+
+    // Create subgroups
+    mapGroup.append("g").attr("class", "country-fills");
+    mapGroup.append("g").attr("class", "country-boundaries");
 
   }, [data, width, height]);
 
@@ -48,23 +53,28 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
   return (
     <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
-      <svg ref={svgRef}>
-        {svgRef.current && (
-          <>
-            <CountryFills
-              mapGroup={d3.select(svgRef.current).select(".map-group")}
-              path={path}
-              data={data}
-              onHover={handleHover}
-              onLeave={hideTooltip}
-            />
-            <CountryBoundaries
-              mapGroup={d3.select(svgRef.current).select(".map-group")}
-              path={path}
-              mapType={data.mapType}
-            />
-          </>
-        )}
+      <svg 
+        ref={svgRef}
+        style={{ 
+          width: '100%',
+          height: 'auto',
+          minHeight: '500px'
+        }}
+      >
+        <g className="map-group">
+          <CountryFills
+            mapGroup={d3.select(svgRef.current).select(".map-group")}
+            path={path}
+            data={data}
+            onHover={handleHover}
+            onLeave={hideTooltip}
+          />
+          <CountryBoundaries
+            mapGroup={d3.select(svgRef.current).select(".map-group")}
+            path={path}
+            mapType={data.mapType}
+          />
+        </g>
       </svg>
     </div>
   );
