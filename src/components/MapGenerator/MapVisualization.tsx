@@ -1,19 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { MapData } from '@/lib/types';
 import { parseMapDescription } from '@/lib/mapRequestParser';
 import OpenAI from 'openai';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface MapVisualizationProps {
   data: MapData | null;
 }
 
-const fuzzyMatchCountry = async (userInput: string, geoFeature: any): Promise<{ isMatch: boolean; color?: string }> => {
-  if (!userInput || !geoFeature) return { isMatch: false };
+const fuzzyMatchCountry = async (userInput: string, geoFeature: any, apiKey: string): Promise<{ isMatch: boolean; color?: string }> => {
+  if (!userInput || !geoFeature || !apiKey) return { isMatch: false };
   
   try {
     const openai = new OpenAI({
-      apiKey: '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',
+      apiKey: apiKey,
       dangerouslyAllowBrowser: true
     });
 
@@ -55,10 +58,29 @@ const fuzzyMatchCountry = async (userInput: string, geoFeature: any): Promise<{ 
 
 const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const [apiKey, setApiKey] = useState('');
+  const [isKeySet, setIsKeySet] = useState(false);
+  const { toast } = useToast();
+
+  const handleSetApiKey = () => {
+    if (!apiKey) {
+      toast({
+        title: "Error",
+        description: "Please enter an OpenAI API key",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsKeySet(true);
+    toast({
+      title: "Success",
+      description: "API key set successfully",
+    });
+  };
 
   useEffect(() => {
-    if (!data || !svgRef.current) {
-      console.log('No data or SVG ref available');
+    if (!data || !svgRef.current || !isKeySet) {
+      console.log('No data, SVG ref, or API key available');
       return;
     }
 
@@ -101,18 +123,16 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
-      // Create an array to store all matching promises
       const matchPromises = regions.features.map(async (feature: any) => {
         const matches = await Promise.all(
           data.states.map(async (s) => {
-            const result = await fuzzyMatchCountry(s.state, feature);
+            const result = await fuzzyMatchCountry(s.state, feature, apiKey);
             return result;
           })
         );
         return matches.find(m => m.isMatch) || { isMatch: false };
       });
 
-      // Wait for all matching results
       const matchResults = await Promise.all(matchPromises);
 
       // Draw regions with the match results
@@ -187,12 +207,40 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     })
     .catch(error => {
       console.error('Error loading map data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load map data",
+        variant: "destructive"
+      });
     });
 
     return () => {
       d3.select("body").selectAll(".tooltip").remove();
     };
-  }, [data]);
+  }, [data, isKeySet, apiKey]);
+
+  if (!isKeySet) {
+    return (
+      <div className="w-full bg-white rounded-lg shadow-lg p-4 space-y-4">
+        <div className="space-y-2">
+          <h3 className="text-lg font-medium">Enter OpenAI API Key</h3>
+          <p className="text-sm text-gray-500">
+            Please enter your OpenAI API key to enable map generation
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            type="password"
+            placeholder="sk-..."
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            className="flex-1"
+          />
+          <Button onClick={handleSetApiKey}>Set Key</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
