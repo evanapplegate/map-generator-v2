@@ -5,7 +5,6 @@ import { MapRequest, MapData } from "@/lib/types";
 import { processExcelFile } from "@/lib/mapUtils";
 import { generateMapInstructions } from "@/lib/llmMapGenerator";
 import { useToast } from "@/hooks/use-toast";
-import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -19,7 +18,7 @@ const Index = () => {
       setIsLoading(true);
       console.log('Handling map request:', request);
       
-      let newMapData;
+      let newMapData: MapData;
       
       if (request.file) {
         // Handle data-driven map
@@ -32,29 +31,18 @@ const Index = () => {
           maxSales: Math.max(...sales),
           minSales: Math.min(...sales),
         };
-      } else if (request.apiKey) {
+      } else {
         // Use LLM to interpret the request
         console.log('Using LLM to interpret request');
+        if (!request.apiKey) {
+          throw new Error('OpenAI API key is required');
+        }
         newMapData = await generateMapInstructions(request.description, request.apiKey);
-      } else {
-        // Fallback to simple parsing
-        console.log('Using simple parser (no API key provided)');
-        const states = request.description.match(/\b[A-Z]{2}\b/g) || [];
-        newMapData = {
-          states: states.map(code => ({
-            state: code,
-            postalCode: code,
-            sales: 100
-          })),
-          maxSales: 100,
-          minSales: 0
-        };
       }
 
       console.log('Setting new map data:', newMapData);
       setMapData(newMapData);
       
-      // Only show success toast after map data is set
       toast({
         title: "Success",
         description: "Map generated successfully!",
@@ -164,7 +152,7 @@ const Index = () => {
             {isLoading ? (
               <div className="bg-white p-6 rounded-lg shadow-lg space-y-4">
                 <div className="text-center mb-4 text-lg font-semibold text-gray-600">
-                  LOADING
+                  Generating Map...
                 </div>
                 <Skeleton className="h-[600px] w-full rounded-lg animate-pulse" />
                 <div className="flex justify-end space-x-4">

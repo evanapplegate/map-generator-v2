@@ -1,50 +1,11 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { MapData } from '@/lib/types';
-import { parseMapDescription } from '@/lib/mapRequestParser';
 import { useToast } from '@/hooks/use-toast';
 
 interface MapVisualizationProps {
   data: MapData | null;
 }
-
-const fuzzyMatchCountry = (userInput: string, geoFeature: any): { isMatch: boolean; color?: string } => {
-  if (!userInput || !geoFeature) return { isMatch: false };
-  
-  try {
-    const geoName = (geoFeature.properties.NAME || geoFeature.properties.name || '').toLowerCase();
-    const searchTerm = userInput.toLowerCase();
-    
-    // Direct match
-    if (geoName === searchTerm) {
-      return { isMatch: true };
-    }
-    
-    // Partial match
-    if (geoName.includes(searchTerm) || searchTerm.includes(geoName)) {
-      return { isMatch: true };
-    }
-    
-    // Handle common abbreviations for US states
-    const stateAbbreviations: { [key: string]: string } = {
-      'ca': 'california',
-      'ny': 'new york',
-      'fl': 'florida',
-      'tx': 'texas',
-      // Add more as needed
-    };
-    
-    if (stateAbbreviations[searchTerm] === geoName || 
-        stateAbbreviations[geoName] === searchTerm) {
-      return { isMatch: true };
-    }
-
-    return { isMatch: false };
-  } catch (error) {
-    console.error('Error in fuzzy matching:', error);
-    return { isMatch: false };
-  }
-};
 
 const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -92,21 +53,19 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
-      const matchResults = regions.features.map((feature: any) => {
-        const matches = data.states.map(s => fuzzyMatchCountry(s.state, feature));
-        return matches.find(m => m.isMatch) || { isMatch: false };
-      });
-
-      // Draw regions with the match results
+      // Draw regions
       svg.append("g")
         .selectAll("path")
         .data(regions.features)
         .join("path")
         .attr("d", path)
-        .attr("fill", (d: any, i: number) => {
-          return matchResults[i].isMatch 
-            ? (matchResults[i].color || data.highlightColor || "#ef4444")
-            : (data.defaultFill || "#f3f3f3");
+        .attr("fill", (d: any) => {
+          const stateName = d.properties.NAME || d.properties.name;
+          const matchedState = data.states.find(s => 
+            s.state.toLowerCase() === stateName.toLowerCase() ||
+            s.postalCode === stateName
+          );
+          return matchedState ? (data.highlightColor || "#ef4444") : (data.defaultFill || "#f3f3f3");
         })
         .attr("stroke", "white")
         .attr("stroke-width", "0.5");
@@ -119,7 +78,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke", "#ffffff")
         .attr("stroke-width", "1");
 
-      // Update labels - Only show labels for matched regions
+      // Add labels
       svg.append("g")
         .selectAll("text")
         .data(regions.features)
@@ -130,12 +89,13 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         })
         .attr("text-anchor", "middle")
         .attr("dy", ".35em")
-        .text((d: any, i: number) => {
-          // Only show label if this region was explicitly matched
-          if (!matchResults[i].isMatch) return "";
-          const geoName = d.properties.NAME || d.properties.name;
-          // Clean up the name by removing any extra text after dots or commas
-          return geoName.split(/[.,]/)[0].trim();
+        .text((d: any) => {
+          const stateName = d.properties.NAME || d.properties.name;
+          const matchedState = data.states.find(s => 
+            s.state.toLowerCase() === stateName.toLowerCase() ||
+            s.postalCode === stateName
+          );
+          return matchedState ? stateName.split(/[.,]/)[0].trim() : "";
         })
         .attr("fill", "#000000")
         .attr("font-size", "14px");
