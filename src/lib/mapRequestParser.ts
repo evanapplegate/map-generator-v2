@@ -15,12 +15,16 @@ export const parseMapDescription = (description: string): ParsedMapRequest => {
 
   description = description.toLowerCase();
 
-  // Extract color information
+  // Extract color information for states
+  if (description.includes("green")) {
+    defaultSettings.defaultFill = "#22c55e"; // Using Tailwind's green-500
+  }
+
+  // Handle highlighted states colors
   if (description.includes("blue")) {
     defaultSettings.highlightedStates = extractStateAbbreviations(description);
     return {
       ...defaultSettings,
-      defaultFill: "#333333", // Dark gray for non-highlighted
       borderColor: "white",
       labelColor: "black"
     };
@@ -30,7 +34,6 @@ export const parseMapDescription = (description: string): ParsedMapRequest => {
     defaultSettings.highlightedStates = extractStateAbbreviations(description);
     return {
       ...defaultSettings,
-      defaultFill: "#333333", // Dark gray for non-highlighted
       borderColor: "white",
       labelColor: "black"
     };
