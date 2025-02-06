@@ -2,21 +2,22 @@ import OpenAI from 'openai';
 import { MapData } from './types';
 
 const systemPrompt = `You are a D3.js map visualization expert. Convert the user's map request into specific D3 visualization instructions.
-Return a JSON object with these properties:
-- highlightedStates: array of state names to highlight
-- defaultFill: hex color for non-highlighted states
-- borderColor: hex color for state borders
-- labeledStates: array of state postal codes to label
-- highlightColor: hex color for highlighted states
+For US maps, return:
+{
+  "highlightedStates": array of state names to highlight,
+  "defaultFill": hex color for non-highlighted states,
+  "borderColor": hex color for state borders,
+  "labeledStates": array of state postal codes to label,
+  "highlightColor": hex color for highlighted states
+}
 
-Example:
-User: "Make California and Texas red, other states gray"
-Response: {
-  "highlightedStates": ["California", "Texas"],
-  "defaultFill": "#f3f3f3",
-  "borderColor": "#ffffff",
-  "labeledStates": ["CA", "TX"],
-  "highlightColor": "#ef4444"
+For world maps, return:
+{
+  "highlightedCountries": array of country names to highlight,
+  "defaultFill": hex color for non-highlighted countries,
+  "borderColor": hex color for country borders,
+  "labeledCountries": array of country codes to label,
+  "highlightColors": object mapping country names to their highlight colors
 }`;
 
 export const generateMapInstructions = async (description: string, apiKey: string): Promise<MapData> => {
@@ -48,16 +49,21 @@ export const generateMapInstructions = async (description: string, apiKey: strin
     console.log('OpenAI response:', response);
     const instructions = JSON.parse(response);
 
+    // Check if it's a world map request by looking for highlightedCountries
+    const isWorldMap = 'highlightedCountries' in instructions;
+
     // Convert the LLM response into our MapData format
-    const stateData = instructions.highlightedStates.map((state: string, index: number) => {
-      // Find the postal code in labeledStates array
-      const postalCode = instructions.labeledStates[index] || state.substring(0, 2).toUpperCase();
-      return {
-        state: state,
-        postalCode: postalCode,
-        sales: 100 // Using 100 as a default value for highlighted states
-      };
-    });
+    const stateData = isWorldMap 
+      ? instructions.highlightedCountries.map((country: string, index: number) => ({
+          state: country,
+          postalCode: instructions.labeledCountries[index] || country.substring(0, 3).toUpperCase(),
+          sales: 100 // Using 100 as a default value for highlighted countries
+        }))
+      : instructions.highlightedStates.map((state: string, index: number) => ({
+          state: state,
+          postalCode: instructions.labeledStates[index] || state.substring(0, 2).toUpperCase(),
+          sales: 100
+        }));
 
     console.log('Converted to MapData:', { states: stateData });
 
@@ -67,7 +73,9 @@ export const generateMapInstructions = async (description: string, apiKey: strin
       minSales: 0,
       defaultFill: instructions.defaultFill,
       borderColor: instructions.borderColor,
-      highlightColor: instructions.highlightColor
+      highlightColor: isWorldMap 
+        ? instructions.highlightColors[stateData[0]?.state] || '#ef4444'
+        : instructions.highlightColor
     };
   } catch (error) {
     console.error('Error generating map instructions:', error);
