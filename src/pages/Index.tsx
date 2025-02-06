@@ -148,7 +148,7 @@ const Index = () => {
           
           <div className="lg:col-span-3">
             {isLoading ? (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 {Array(4).fill(null).map((_, i) => (
                   <div key={i} className="bg-white p-6 rounded-lg shadow-lg space-y-4">
                     <div className="text-center mb-4 text-lg font-semibold text-gray-600">
@@ -162,7 +162,7 @@ const Index = () => {
                 ))}
               </div>
             ) : mapVariations && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 {mapVariations.map((mapData, index) => (
                   <div key={index} className={`map-visualization-${index} bg-white p-6 rounded-lg shadow-lg`}>
                     <div className="text-center mb-4 text-lg font-semibold text-gray-600">
