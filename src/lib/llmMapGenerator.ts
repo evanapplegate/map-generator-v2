@@ -22,8 +22,7 @@ The JSON must follow this exact format:
   ],
   "defaultFill": "#hexColor",
   "highlightColors": {
-    "code": "#hexColor",
-    "code2": "#hexColor"
+    "code": "#hexColor"
   },
   "borderColor": "#hexColor"
 }`;
@@ -38,7 +37,7 @@ const validateResponse = async (jsonResponse: any, userRequest: string, apiKey: 
   const isWorldMap = userRequest.toLowerCase().includes('world') || 
                     /\b(countries|country)\b/i.test(userRequest);
 
-  const validationPrompt = `You are a data validation expert. Compare this JSON response with the GeoJSON fields and the original user request.
+  const validationPrompt = `You are a data validation expert. Compare this JSON response with the original user request.
 Original request: "${userRequest}"
 
 JSON response:
@@ -48,7 +47,8 @@ Check if:
 1. ${isWorldMap ? 'All country codes match ISO 3166-1 alpha-3 format' : 'All state codes in highlightColors match valid US state postal codes'}
 2. All colors are valid hex codes
 3. All requested ${isWorldMap ? 'countries' : 'states'} from the user's description are included
-4. The color scheme matches what was requested
+4. The color scheme matches what was requested (e.g., if user asked for "blue USA", check if USA's color is a shade of blue)
+5. The labels match the requested entities
 
 Respond with ONLY a JSON object in this format:
 {
@@ -130,7 +130,7 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           throw new Error('Invalid response structure from OpenAI');
         }
 
-        // Validate the response against GeoJSON and user requirements
+        // Validate the response against user requirements
         const validation = await validateResponse(parsedResponse, description, apiKey);
         console.log('Validation result:', validation);
 

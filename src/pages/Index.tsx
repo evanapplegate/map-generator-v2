@@ -22,19 +22,17 @@ const Index = () => {
       let newMapData: MapData[];
       
       if (request.file) {
-        // Handle data-driven map
         console.log('Processing file-based request');
         const stateData = await processExcelFile(request.file);
         const sales = stateData.map(d => d.sales);
         
-        // For file uploads, we'll just duplicate the same map 4 times
-        newMapData = Array(4).fill({
+        // For file uploads, we'll just duplicate the same map 2 times
+        newMapData = Array(2).fill({
           states: stateData,
           maxSales: Math.max(...sales),
           minSales: Math.min(...sales),
         });
       } else {
-        // Use LLM to interpret the request and get 4 variations
         console.log('Using LLM to interpret request');
         if (!request.apiKey) {
           throw new Error('OpenAI API key is required');
@@ -149,7 +147,7 @@ const Index = () => {
           <div className="lg:col-span-3">
             {isLoading ? (
               <div className="space-y-4">
-                {Array(4).fill(null).map((_, i) => (
+                {Array(2).fill(null).map((_, i) => (
                   <div key={i} className="bg-white p-6 rounded-lg shadow-lg space-y-4">
                     <div className="text-center mb-4 text-lg font-semibold text-gray-600">
                       Variation {i + 1}
