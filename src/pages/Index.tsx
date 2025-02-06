@@ -7,7 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
 
-const parseSimpleMapRequest = (description: string): MapData => {
+const parseSimpleMapRequest = (description: string, mapType: "usa" | "world"): MapData => {
   const defaultFill = "#f3f4f6"; // light gray
   const highlightColor = "#ef4444"; // red
   
@@ -34,7 +34,8 @@ const parseSimpleMapRequest = (description: string): MapData => {
   return {
     states,
     maxSales: 100,
-    minSales: 0
+    minSales: 0,
+    mapType
   };
 };
 
@@ -53,10 +54,11 @@ const Index = () => {
           states: stateData,
           maxSales: Math.max(...sales),
           minSales: Math.min(...sales),
+          mapType: request.mapType
         });
       } else {
         // Handle simple text-based map
-        const simpleMapData = parseSimpleMapRequest(request.description);
+        const simpleMapData = parseSimpleMapRequest(request.description, request.mapType);
         setMapData(simpleMapData);
       }
 

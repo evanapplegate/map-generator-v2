@@ -13,7 +13,7 @@ interface MapFormProps {
 const MapForm = ({ onSubmit }: MapFormProps) => {
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [mapType, setMapType] = useState("usa");
+  const [mapType, setMapType] = useState<"usa" | "world">("usa");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +26,7 @@ const MapForm = ({ onSubmit }: MapFormProps) => {
         <Label>Map Type</Label>
         <RadioGroup
           defaultValue="usa"
-          onValueChange={(value) => setMapType(value)}
+          onValueChange={(value: "usa" | "world") => setMapType(value)}
           className="flex space-x-4"
         >
           <div className="flex items-center space-x-2">
