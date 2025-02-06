@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import * as topojson from 'topojson-client';
 import { MapData } from '@/lib/types';
 import { getColorScale, formatSalesNumber } from '@/lib/mapUtils';
 
@@ -33,22 +32,38 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     const path = d3.geoPath().projection(projection);
     const colorScale = getColorScale(data.minSales, data.maxSales);
 
-    // Load world GeoJSON data
-    d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
-      .then((world: any) => {
-        const countries = topojson.feature(world, world.objects.countries);
-        
-        // Create map
-        svg.append("g")
+    // Create a group for map layers
+    const mapGroup = svg.append("g");
+
+    // Load and render country fills
+    d3.json("/data/countries-110m.json")
+      .then((countriesData: any) => {
+        // Render country fills
+        mapGroup.append("g")
+          .attr("class", "country-fills")
           .selectAll("path")
-          .data(countries.features)
+          .data(countriesData.features)
           .join("path")
           .attr("d", path)
           .attr("fill", (d: any) => {
             const countryData = data.states.find(s => s.state === d.properties.name);
             return countryData ? colorScale(countryData.sales) : "#eee";
           })
-          .attr("stroke", "white")
+          .attr("stroke", "none");
+
+        // Load and render country boundaries
+        return d3.json("/data/countries-boundaries-110m.json");
+      })
+      .then((boundariesData: any) => {
+        // Render boundaries as a separate layer
+        mapGroup.append("g")
+          .attr("class", "country-boundaries")
+          .selectAll("path")
+          .data(boundariesData.features)
+          .join("path")
+          .attr("d", path)
+          .attr("fill", "none")
+          .attr("stroke", "#fff")
           .attr("stroke-width", "0.5px");
 
         // Add tooltips
@@ -62,7 +77,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           .style("border-radius", "5px")
           .style("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
 
-        svg.selectAll("path")
+        mapGroup.selectAll(".country-fills path")
           .on("mouseover", (event, d: any) => {
             const countryData = data.states.find(s => s.state === d.properties.name);
             if (countryData) {
@@ -84,7 +99,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           });
       })
       .catch(error => {
-        console.error('Error loading world map data:', error);
+        console.error('Error loading map data:', error);
       });
 
     return () => {
