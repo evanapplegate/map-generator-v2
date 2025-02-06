@@ -8,7 +8,7 @@ interface CountryBoundariesProps {
 
 const CountryBoundaries = ({ mapGroup, path }: CountryBoundariesProps) => {
   useEffect(() => {
-    d3.json("/data/countries-boundaries-110m.json")
+    d3.json("/data/US_bounds.geojson")
       .then((boundariesData: any) => {
         mapGroup.append("g")
           .attr("class", "country-boundaries")
@@ -17,8 +17,8 @@ const CountryBoundaries = ({ mapGroup, path }: CountryBoundariesProps) => {
           .join("path")
           .attr("d", path)
           .attr("fill", "none")
-          .attr("stroke", "#fff")
-          .attr("stroke-width", "0.5px");
+          .attr("stroke", "#ffffff")
+          .attr("stroke-width", "1px");
       })
       .catch(error => {
         console.error('Error loading country boundaries:', error);
