@@ -73,8 +73,8 @@ const Index = () => {
 
   const handleExport = (format: 'svg') => {
     console.log('Exporting map as:', format);
-    const svg = document.querySelector('svg');
-    if (!svg) {
+    const svgElement = document.querySelector('.map-visualization svg');
+    if (!svgElement) {
       console.error('No SVG element found for export');
       toast({
         title: "Export Failed",
@@ -85,10 +85,14 @@ const Index = () => {
     }
 
     // Clone the SVG to avoid modifying the displayed one
-    const clonedSvg = svg.cloneNode(true) as SVGElement;
+    const clonedSvg = svgElement.cloneNode(true) as SVGElement;
     
-    // Ensure all styles are inlined for export
-    const computedStyle = window.getComputedStyle(svg);
+    // Set explicit dimensions
+    clonedSvg.setAttribute('width', '1200');
+    clonedSvg.setAttribute('height', '800');
+    
+    // Ensure all styles are inlined
+    const computedStyle = window.getComputedStyle(svgElement);
     clonedSvg.style.backgroundColor = computedStyle.backgroundColor;
     
     // Add XML declaration and SVG namespace
@@ -97,22 +101,21 @@ const Index = () => {
       new XMLSerializer().serializeToString(clonedSvg)
         .replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"');
 
+    // Create blob with proper SVG MIME type
+    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    
     // Check SVG data size
-    const svgSize = new Blob([svgData]).size;
-    if (svgSize < 1024) { // 1KB minimum size check
-      console.error('Generated SVG is suspiciously small:', svgSize, 'bytes');
+    if (blob.size < 1024) {
+      console.error('Generated SVG is suspiciously small:', blob.size, 'bytes');
       toast({
         title: "Export Failed",
-        description: "Generated SVG appears to be invalid or empty",
+        description: "Generated SVG appears to be invalid",
         variant: "destructive",
       });
       return;
     }
 
-    // Create blob with proper SVG MIME type
-    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     saveAs(blob, 'map-export.svg');
-
     toast({
       title: "Success",
       description: "Map exported successfully!",
@@ -145,14 +148,14 @@ const Index = () => {
                 </div>
               </div>
             ) : mapData && (
-              <>
+              <div className="map-visualization">
                 <MapVisualization data={mapData} />
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-4">
                   <Button onClick={() => handleExport('svg')}>
                     Export SVG
                   </Button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
