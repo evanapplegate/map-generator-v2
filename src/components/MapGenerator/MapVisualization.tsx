@@ -133,16 +133,14 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           });
           return color;
         })
-        .attr("stroke", "white")
-        .attr("stroke-width", "0.5px");
+        .attr("stroke", "none"); // Remove stroke
 
-      // Draw bounds with white 1px stroke
+      // Draw bounds without stroke
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", "white")
-        .attr("stroke-width", "1px");
+        .attr("stroke", "none"); // Remove stroke from bounds
 
       // Add tooltips
       const tooltip = d3.select("body")
