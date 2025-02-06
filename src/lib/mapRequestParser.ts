@@ -8,12 +8,17 @@ interface ParsedMapRequest {
 export const parseMapDescription = (description: string): ParsedMapRequest => {
   const defaultSettings = {
     highlightedStates: [],
-    defaultFill: "#22c55e", // Default to green-500
+    defaultFill: "#f3f3f3", // Light gray default
     borderColor: "white",
     labelColor: "black"
   };
 
   description = description.toLowerCase();
+
+  // Extract color information for states
+  if (description.includes("green")) {
+    defaultSettings.defaultFill = "#22c55e"; // Using Tailwind's green-500
+  }
 
   // Extract state codes to highlight
   defaultSettings.highlightedStates = extractStateAbbreviations(description);
