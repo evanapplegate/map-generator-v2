@@ -39,7 +39,17 @@ const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps)
       .then((world: any) => {
         const countries = topojson.feature(world, world.objects.countries);
         
-        // Create map
+        // Create map background (all countries)
+        svg.append("g")
+          .selectAll("path")
+          .data(countries.features)
+          .join("path")
+          .attr("d", path)
+          .attr("fill", "#e5e7eb") // Light gray for countries without data
+          .attr("stroke", "#fff")
+          .attr("stroke-width", "0.5px");
+
+        // Add colored countries with data
         svg.append("g")
           .selectAll("path")
           .data(countries.features)
@@ -47,10 +57,11 @@ const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps)
           .attr("d", path)
           .attr("fill", (d: any) => {
             const countryData = data.states.find(s => s.state === d.properties.name);
-            return countryData ? colorScale(countryData.sales) : "#eee";
+            return countryData ? colorScale(countryData.sales) : "transparent";
           })
-          .attr("stroke", "white")
+          .attr("stroke", "#fff")
           .attr("stroke-width", "0.5px")
+          .style("pointer-events", "all")
           .on("mouseover", (event, d: any) => {
             const countryData = data.states.find(s => s.state === d.properties.name);
             handleMouseOver(event, d, tooltip, countryData);
