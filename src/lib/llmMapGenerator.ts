@@ -6,26 +6,39 @@ const getSystemPrompt = (variationIndex: number) => {
 For world maps (when countries are mentioned), use countries.geojson for country polygons and country_bounds.geojson for national boundaries.
 For US maps (when US states are mentioned), use US_states.geojson for state polygons and US_bounds.geojson for national boundaries.
 
-RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.`;
+RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.
+
+The JSON must follow this exact format for world maps:
+{
+  "states": [
+    { "state": "countryName", "postalCode": "ISO3" }
+  ],
+  "defaultFill": "#hexColor",
+  "highlightColors": {
+    "ISO3": "#hexColor"
+  },
+  "borderColor": "#hexColor"
+}
+
+For US maps, use 2-letter state codes instead of ISO3.
+Example: For "blue USA", the response should include the full country name and correct ISO3 code:
+{
+  "states": [
+    { "state": "United States of America", "postalCode": "USA" }
+  ],
+  "defaultFill": "#D3D3D3",
+  "highlightColors": {
+    "USA": "#0000FF"
+  },
+  "borderColor": "#FFFFFF"
+}`;
 
   const variations = [
     "Use vibrant, high-contrast colors for highlighting.",
     "Use pastel, soft colors for a gentle appearance.",
   ];
 
-  return `${basePrompt}
-${variations[variationIndex]}
-The JSON must follow this exact format:
-{
-  "states": [
-    { "state": "stateName", "postalCode": "code" }
-  ],
-  "defaultFill": "#hexColor",
-  "highlightColors": {
-    "code": "#hexColor"
-  },
-  "borderColor": "#hexColor"
-}`;
+  return `${basePrompt}\n${variations[variationIndex]}`;
 };
 
 const validateResponse = async (jsonResponse: any, userRequest: string, apiKey: string) => {
