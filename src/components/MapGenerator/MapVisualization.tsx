@@ -11,8 +11,13 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    console.log('MapVisualization - Received data:', data);
-    if (!data || !svgRef.current) return;
+    console.log('MapVisualization - Raw data received:', data);
+    if (!data || !svgRef.current) {
+      console.log('No data or SVG ref available');
+      return;
+    }
+
+    console.log('MapVisualization - States data:', data.states);
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -60,20 +65,34 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
       // Log all country names from GeoJSON for debugging
       console.log('Available countries in GeoJSON:', 
-        regions.features.map((f: any) => ({ 
-          name: f.properties.NAME,
-          matched: data.states.some(s => s.state.toLowerCase() === f.properties.NAME.toLowerCase())
-        }))
+        regions.features.map((f: any) => {
+          const name = f.properties?.NAME || f.properties?.name;
+          console.log('GeoJSON country:', { name, properties: f.properties });
+          return { 
+            name,
+            matched: data.states.some(s => s.state?.toLowerCase() === name?.toLowerCase())
+          };
+        })
       );
 
       // Log all countries from uploaded data
       console.log('Countries from uploaded data:', 
-        data.states.map(s => ({
-          country: s.state,
-          foundMatch: regions.features.some((f: any) => 
-            f.properties.NAME.toLowerCase() === s.state.toLowerCase()
-          )
-        }))
+        data.states.map(s => {
+          console.log('Processing state data:', s);
+          return {
+            country: s.state,
+            foundMatch: regions.features.some((f: any) => {
+              const geoName = f.properties?.NAME || f.properties?.name;
+              const match = s.state?.toLowerCase() === geoName?.toLowerCase();
+              console.log('Matching attempt:', { 
+                dataCountry: s.state, 
+                geoJsonCountry: geoName,
+                matched: match 
+              });
+              return match;
+            })
+          };
+        })
       );
 
       // Draw region boundaries (states or countries)
@@ -83,10 +102,20 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .join("path")
         .attr("d", path)
         .attr("fill", (d: any) => {
+          const geoName = d.properties?.NAME || d.properties?.name;
+          console.log('Processing region for coloring:', { 
+            properties: d.properties,
+            geoName
+          });
+          
           const regionData = data.states.find(s => {
+            if (!s.state || !geoName) {
+              console.log('Missing data for matching:', { state: s.state, geoName });
+              return false;
+            }
             const match = isUSMap 
               ? s.state === d.properties.name
-              : s.state.toLowerCase() === (d.properties.NAME || d.properties.name).toLowerCase();
+              : s.state.toLowerCase() === geoName.toLowerCase();
             if (match) {
               console.log('Found matching region:', {
                 feature: d.properties,
@@ -95,9 +124,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             }
             return match;
           });
+          
           const color = regionData ? colorScale(regionData.sales) : "#eee";
           console.log('Region color:', {
-            region: d.properties.NAME || d.properties.name,
+            region: geoName,
             sales: regionData?.sales,
             color
           });
@@ -127,10 +157,11 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
       svg.selectAll("path")
         .on("mouseover", (event, d: any) => {
+          const geoName = d.properties?.NAME || d.properties?.name;
           const regionData = data.states.find(s => 
             isUSMap 
               ? s.state === d.properties.name
-              : s.state.toLowerCase() === (d.properties.NAME || d.properties.name).toLowerCase()
+              : s.state?.toLowerCase() === geoName?.toLowerCase()
           );
           if (regionData) {
             console.log('Tooltip shown for:', regionData);
