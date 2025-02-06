@@ -82,15 +82,15 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           return regionData ? (data.highlightColor || "#ef4444") : data.defaultFill || parsedRequest.defaultFill;
         })
         .attr("stroke", data.borderColor || "#ffffff")
-        .attr("stroke-width", data.borderWidth || "0.5px");
+        .attr("stroke-width", "0.5");  // Force stroke-width for all polygons
 
-      // Draw bounds
+      // Draw bounds with explicit white stroke
       svg.append("path")
         .datum(bounds)
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", data.borderColor || "#ffffff")
-        .attr("stroke-width", data.boundaryWidth || "1px");
+        .attr("stroke", "#ffffff")  // Force white stroke for boundaries
+        .attr("stroke-width", "1");  // Force 1px stroke width for boundaries
 
       // Add labels for highlighted states
       svg.append("g")
