@@ -7,7 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
 
-const parseSimpleMapRequest = (description: string, mapType: "usa" | "world"): MapData => {
+const parseSimpleMapRequest = (description: string): MapData => {
   const defaultFill = "#f3f4f6"; // light gray
   const highlightColor = "#ef4444"; // red
   
@@ -34,8 +34,7 @@ const parseSimpleMapRequest = (description: string, mapType: "usa" | "world"): M
   return {
     states,
     maxSales: 100,
-    minSales: 0,
-    mapType
+    minSales: 0
   };
 };
 
@@ -54,11 +53,10 @@ const Index = () => {
           states: stateData,
           maxSales: Math.max(...sales),
           minSales: Math.min(...sales),
-          mapType: request.mapType
         });
       } else {
         // Handle simple text-based map
-        const simpleMapData = parseSimpleMapRequest(request.description, request.mapType);
+        const simpleMapData = parseSimpleMapRequest(request.description);
         setMapData(simpleMapData);
       }
 
@@ -96,8 +94,11 @@ const Index = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Map Generator
+            US Sales Map Generator
           </h1>
+          <p className="text-lg text-gray-600">
+            Upload your sales data or describe your map requirements
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

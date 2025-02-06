@@ -1,7 +1,6 @@
 export interface MapRequest {
   description: string;
   file: File | null;
-  mapType: "usa" | "world";
 }
 
 export interface StateData {
@@ -14,7 +13,6 @@ export interface MapData {
   states: StateData[];
   maxSales: number;
   minSales: number;
-  mapType: "usa" | "world";
 }
 
 export interface SimpleMapRequest {
