@@ -35,9 +35,9 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
 };
 
 export const getColorScale = (minSales: number, maxSales: number) => {
-  return d3.scaleSequential()
+  return d3.scaleLinear<string>()
     .domain([minSales, maxSales])
-    .interpolator(d3.interpolateViridis); // Using Viridis color scheme for better visualization
+    .range(['#90EE90', '#006400']); // Light green to dark green
 };
 
 export const formatSalesNumber = (sales: number): string => {

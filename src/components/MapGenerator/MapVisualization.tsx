@@ -2,9 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { MapData } from '@/lib/types';
-import { getColorScale } from '@/lib/mapUtils';
-import { createProjection } from './MapProjection';
-import { createTooltip, handleMouseOver, handleMouseMove, handleMouseOut } from './MapTooltip';
+import { getColorScale, formatSalesNumber } from '@/lib/mapUtils';
 
 interface MapVisualizationProps {
   data: MapData | null;
@@ -29,27 +27,19 @@ const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps)
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    const projection = createProjection(width, height, detailLevel);
+    const projection = d3.geoEqualEarth()
+      .scale(180)
+      .translate([width / 2, height / 2]);
+
     const path = d3.geoPath().projection(projection);
     const colorScale = getColorScale(data.minSales, data.maxSales);
-    const tooltip = createTooltip();
 
     // Load world GeoJSON data based on detail level
     d3.json(`https://cdn.jsdelivr.net/npm/world-atlas@2/countries-${detailLevel}.json`)
       .then((world: any) => {
         const countries = topojson.feature(world, world.objects.countries);
         
-        // Create map background (all countries)
-        svg.append("g")
-          .selectAll("path")
-          .data(countries.features)
-          .join("path")
-          .attr("d", path)
-          .attr("fill", "#e5e7eb") // Light gray for countries without data
-          .attr("stroke", "#fff")
-          .attr("stroke-width", "0.5px");
-
-        // Add colored countries with data
+        // Create map
         svg.append("g")
           .selectAll("path")
           .data(countries.features)
@@ -57,17 +47,42 @@ const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps)
           .attr("d", path)
           .attr("fill", (d: any) => {
             const countryData = data.states.find(s => s.state === d.properties.name);
-            return countryData ? colorScale(countryData.sales) : "transparent";
+            return countryData ? colorScale(countryData.sales) : "#eee";
           })
-          .attr("stroke", "#fff")
-          .attr("stroke-width", "0.5px")
-          .style("pointer-events", "all")
+          .attr("stroke", "white")
+          .attr("stroke-width", "0.5px");
+
+        // Add tooltips
+        const tooltip = d3.select("body")
+          .append("div")
+          .attr("class", "tooltip")
+          .style("position", "absolute")
+          .style("visibility", "hidden")
+          .style("background-color", "white")
+          .style("padding", "10px")
+          .style("border-radius", "5px")
+          .style("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
+
+        svg.selectAll("path")
           .on("mouseover", (event, d: any) => {
             const countryData = data.states.find(s => s.state === d.properties.name);
-            handleMouseOver(event, d, tooltip, countryData);
+            if (countryData) {
+              tooltip
+                .style("visibility", "visible")
+                .html(`
+                  <strong>${countryData.state}</strong><br/>
+                  GDP: ${formatSalesNumber(countryData.sales)}
+                `);
+            }
           })
-          .on("mousemove", (event) => handleMouseMove(event, tooltip))
-          .on("mouseout", () => handleMouseOut(tooltip));
+          .on("mousemove", (event) => {
+            tooltip
+              .style("top", (event.pageY - 10) + "px")
+              .style("left", (event.pageX + 10) + "px");
+          })
+          .on("mouseout", () => {
+            tooltip.style("visibility", "hidden");
+          });
       })
       .catch(error => {
         console.error('Error loading world map data:', error);
@@ -79,7 +94,7 @@ const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps)
   }, [data, detailLevel]);
 
   return (
-    <div className="map-visualization w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
+    <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
       <svg ref={svgRef} className="w-full" />
     </div>
   );
