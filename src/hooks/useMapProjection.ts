@@ -1,4 +1,4 @@
-import * * d3 from 'd3';
+import * as d3 from 'd3';
 
 export const useMapProjection = (width: number, height: number) => {
   const projection = d3.geoMercator()
