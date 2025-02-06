@@ -27,9 +27,20 @@ const MapVisualization = ({ data, detailLevel = "110m" }: MapVisualizationProps)
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
+    // Adjust scale based on detail level
+    const getScale = () => {
+      switch (detailLevel) {
+        case "10m": return 160;
+        case "50m": return 170;
+        case "110m": return 180;
+        default: return 180;
+      }
+    };
+
     const projection = d3.geoEqualEarth()
-      .scale(180)
-      .translate([width / 2, height / 2]);
+      .scale(getScale())
+      .translate([width / 2, height / 2])
+      .clipExtent([[0, 0], [width, height]]);  // Add clipExtent to prevent overflow
 
     const path = d3.geoPath().projection(projection);
     const colorScale = getColorScale(data.minSales, data.maxSales);
