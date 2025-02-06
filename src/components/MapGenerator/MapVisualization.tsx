@@ -87,7 +87,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke", "white")
         .attr("stroke-width", "1px");
 
-      // Add labels for highlighted states
+      // Add labels for highlighted states with improved positioning and visibility
       svg.append("g")
         .selectAll("text")
         .data(regions.features)
@@ -100,14 +100,17 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("dy", ".35em")
         .text((d: any) => {
           const geoName = d.properties.NAME || d.properties.name;
-          const isHighlighted = data.states.some(s => 
+          const matchingState = data.states.find(s => 
             s.state.toLowerCase().trim() === geoName.toLowerCase().trim()
           );
-          return isHighlighted ? d.properties.POSTAL || "" : "";
+          return matchingState ? matchingState.postalCode : "";
         })
         .attr("fill", "white")
-        .attr("font-size", "10px")
-        .attr("font-weight", "bold");
+        .attr("font-size", "14px")
+        .attr("font-weight", "bold")
+        .attr("stroke", "#000")
+        .attr("stroke-width", "0.5px")
+        .attr("paint-order", "stroke");
 
       const tooltip = d3.select("body")
         .append("div")
