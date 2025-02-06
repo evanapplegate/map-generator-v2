@@ -1,31 +1,36 @@
 import OpenAI from 'openai';
 import { MapData } from './types';
 
-const systemPrompt = `You are a D3.js map visualization expert. Convert the user's map request into specific D3 visualization instructions.
+const getSystemPrompt = (variationIndex: number) => {
+  const basePrompt = `You are a D3.js map visualization expert. Convert the user's map request into specific D3 visualization instructions.
 For world maps (when countries are mentioned), use countries.geojson for country polygons and country_bounds.geojson for national boundaries.
-RESPOND ONLY WITH A VALID JSON OBJECT IN THIS EXACT FORMAT:
-{
-  "states": [
-    { "state": "countryName", "postalCode": "countryCode" }
-  ],
-  "defaultFill": "#hexColor",
-  "highlightColor": "#hexColor",
-  "borderColor": "#hexColor"
-}
-
 For US maps (when US states are mentioned), use US_states.geojson for state polygons and US_bounds.geojson for national boundaries.
-RESPOND ONLY WITH A VALID JSON OBJECT IN THIS EXACT FORMAT:
+
+RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.`;
+
+  // Add variation-specific guidance
+  const variations = [
+    "Use vibrant, high-contrast colors for highlighting.",
+    "Use pastel, soft colors for a gentle appearance.",
+    "Use earth tones and natural colors.",
+    "Use modern, tech-inspired colors (blues, cyans, etc)."
+  ];
+
+  return `${basePrompt}
+${variations[variationIndex]}
+The JSON must follow this exact format:
 {
   "states": [
     { "state": "stateName", "postalCode": "stateCode" }
   ],
   "defaultFill": "#hexColor",
-  "highlightColor": "#hexColor",
+  "highlightColors": {
+    "stateCode": "#hexColor",
+    "stateCode2": "#hexColor"
+  },
   "borderColor": "#hexColor"
-}
-
-DO NOT INCLUDE ANY ADDITIONAL TEXT, MARKDOWN, OR FORMATTING. RETURN ONLY THE JSON OBJECT.
-IMPORTANT: Use different color schemes and styling for visual variety.`;
+}`;
+};
 
 export const generateMapInstructions = async (description: string, apiKey: string): Promise<MapData[]> => {
   if (!apiKey) {
@@ -41,23 +46,22 @@ export const generateMapInstructions = async (description: string, apiKey: strin
   try {
     console.log('Sending request to OpenAI:', description);
     
-    // Generate 4 variations
-    const variations = await Promise.all(Array(4).fill(null).map(async () => {
+    // Generate 4 variations with different color schemes
+    const variations = await Promise.all([0, 1, 2, 3].map(async (index) => {
       const completion = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: getSystemPrompt(index) },
           { role: "user", content: description }
         ],
-        temperature: 0.8, // Increased for more variation
+        temperature: 0.8,
       });
 
       const response = completion.choices[0]?.message?.content;
       if (!response) throw new Error('No response from OpenAI');
 
-      console.log('OpenAI response:', response);
+      console.log(`OpenAI response for variation ${index}:`, response);
       
-      // Since we're now requesting pure JSON, we can parse directly
       const parsedResponse = JSON.parse(response);
 
       // Convert the response to our MapData format
@@ -71,7 +75,7 @@ export const generateMapInstructions = async (description: string, apiKey: strin
         minSales: 0,
         defaultFill: parsedResponse.defaultFill,
         borderColor: parsedResponse.borderColor,
-        highlightColor: parsedResponse.highlightColor
+        highlightColors: parsedResponse.highlightColors // Now using the object of colors
       };
     }));
 

@@ -65,9 +65,13 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             s.state.toLowerCase() === stateName.toLowerCase() ||
             s.postalCode === stateName
           );
-          return matchedState ? (data.highlightColor || "#ef4444") : (data.defaultFill || "#f3f3f3");
+          if (matchedState) {
+            // Use the specific color for this state/country from highlightColors
+            return data.highlightColors?.[matchedState.postalCode] || data.highlightColor || "#ef4444";
+          }
+          return data.defaultFill || "#f3f3f3";
         })
-        .attr("stroke", "white")
+        .attr("stroke", data.borderColor || "white")
         .attr("stroke-width", "0.5");
 
       // Draw bounds
@@ -126,6 +130,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .on("mouseout", () => {
           tooltip.style("visibility", "hidden");
         });
+
     })
     .catch(error => {
       console.error('Error loading map data:', error);

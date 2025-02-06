@@ -17,6 +17,7 @@ export interface MapData {
   defaultFill?: string;
   borderColor?: string;
   highlightColor?: string;
+  highlightColors?: { [key: string]: string };
   borderWidth?: string;
   boundaryWidth?: string;
   labelColor?: string;
