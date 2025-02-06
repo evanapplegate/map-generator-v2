@@ -14,3 +14,9 @@ export interface MapData {
   maxSales: number;
   minSales: number;
 }
+
+export interface SimpleMapRequest {
+  highlightedStates: string[];
+  defaultFill: string;
+  borderColor: string;
+}

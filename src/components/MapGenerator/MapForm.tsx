@@ -24,14 +24,17 @@ const MapForm = ({ onSubmit }: MapFormProps) => {
         <Label htmlFor="description">Map Description</Label>
         <Textarea
           id="description"
-          placeholder="Describe your map requirements..."
+          placeholder="Describe your map requirements... (e.g., 'USA map, light gray fill, white boundaries, label CA NY MT + make those states red')"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="h-32"
         />
       </div>
       
-      <FileUpload onFileSelect={(file) => setFile(file)} />
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">Optional: Upload sales data file</p>
+        <FileUpload onFileSelect={(file) => setFile(file)} />
+      </div>
       
       <Button type="submit" className="w-full">
         Generate Map

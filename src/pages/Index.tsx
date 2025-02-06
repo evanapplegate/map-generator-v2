@@ -1,10 +1,41 @@
 import { useState } from "react";
 import MapForm from "@/components/MapGenerator/MapForm";
 import MapVisualization from "@/components/MapGenerator/MapVisualization";
-import ExportButtons from "@/components/MapGenerator/ExportButtons";
 import { MapRequest, MapData } from "@/lib/types";
 import { processExcelFile } from "@/lib/mapUtils";
 import { useToast } from "@/components/ui/use-toast";
+import { saveAs } from "file-saver";
+
+const parseSimpleMapRequest = (description: string): MapData => {
+  const defaultFill = "#f3f4f6"; // light gray
+  const highlightColor = "#ef4444"; // red
+  
+  // Extract state codes (2 letter codes)
+  const stateMatches = description.match(/\b[A-Z]{2}\b/g) || [];
+  
+  // Create base state data
+  const states = [
+    { state: "California", postalCode: "CA", sales: 0 },
+    { state: "New York", postalCode: "NY", sales: 0 },
+    { state: "Montana", postalCode: "MT", sales: 0 },
+    // Add more states as needed
+  ];
+
+  // Highlight matched states
+  states.forEach(state => {
+    if (stateMatches.includes(state.postalCode)) {
+      state.sales = 100; // Will be colored red
+    } else {
+      state.sales = 0; // Will use default fill
+    }
+  });
+
+  return {
+    states,
+    maxSales: 100,
+    minSales: 0
+  };
+};
 
 const Index = () => {
   const [mapData, setMapData] = useState<MapData | null>(null);
@@ -12,23 +43,21 @@ const Index = () => {
 
   const handleMapRequest = async (request: MapRequest) => {
     try {
-      if (!request.file) {
-        toast({
-          title: "Error",
-          description: "Please upload a data file",
-          variant: "destructive",
+      if (request.file) {
+        // Handle data-driven map
+        const stateData = await processExcelFile(request.file);
+        const sales = stateData.map(d => d.sales);
+        
+        setMapData({
+          states: stateData,
+          maxSales: Math.max(...sales),
+          minSales: Math.min(...sales),
         });
-        return;
+      } else {
+        // Handle simple text-based map
+        const simpleMapData = parseSimpleMapRequest(request.description);
+        setMapData(simpleMapData);
       }
-
-      const stateData = await processExcelFile(request.file);
-      const sales = stateData.map(d => d.sales);
-      
-      setMapData({
-        states: stateData,
-        maxSales: Math.max(...sales),
-        minSales: Math.min(...sales),
-      });
 
       toast({
         title: "Success",
@@ -37,7 +66,7 @@ const Index = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to process data file",
+        description: "Failed to process request",
         variant: "destructive",
       });
     }
@@ -52,7 +81,6 @@ const Index = () => {
       const blob = new Blob([svgData], { type: 'image/svg+xml' });
       saveAs(blob, 'us-sales-map.svg');
     } else {
-      // For PDF export, we'd need to add a PDF generation library
       toast({
         title: "Coming Soon",
         description: "PDF export will be available in the next update!",
@@ -68,7 +96,7 @@ const Index = () => {
             US Sales Map Generator
           </h1>
           <p className="text-lg text-gray-600">
-            Upload your sales data and generate a beautiful, interactive map
+            Upload your sales data or describe your map requirements
           </p>
         </div>
 
@@ -82,7 +110,14 @@ const Index = () => {
               <>
                 <MapVisualization data={mapData} />
                 <div className="flex justify-end">
-                  <ExportButtons onExport={handleExport} />
+                  <div className="space-x-4">
+                    <Button onClick={() => handleExport('svg')}>
+                      Export SVG
+                    </Button>
+                    <Button onClick={() => handleExport('pdf')}>
+                      Export PDF
+                    </Button>
+                  </div>
                 </div>
               </>
             )}

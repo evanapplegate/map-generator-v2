@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
+import * as topojson from 'topojson-client';
 import { MapData } from '@/lib/types';
 import { getColorScale, formatSalesNumber } from '@/lib/mapUtils';
 
