@@ -59,6 +59,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             <CountryBoundaries
               mapGroup={d3.select(svgRef.current).select("g")}
               path={useMapProjection(960, 600).path}
+              mapType={data.mapType}
             />
           </>
         )}

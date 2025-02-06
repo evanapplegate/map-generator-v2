@@ -14,13 +14,14 @@ interface CountryFillsProps {
 const CountryFills = ({ mapGroup, path, data, onHover, onLeave }: CountryFillsProps) => {
   useEffect(() => {
     const colorScale = getColorScale(data.minSales, data.maxSales);
+    const geoJsonPath = data.mapType === "usa" ? "/data/US_states.geojson" : "/data/countries.geojson";
 
-    d3.json("/data/countries-110m.json")
-      .then((countriesData: any) => {
+    d3.json(geoJsonPath)
+      .then((geoData: any) => {
         mapGroup.append("g")
           .attr("class", "country-fills")
           .selectAll("path")
-          .data(countriesData.features)
+          .data(geoData.features)
           .join("path")
           .attr("d", path)
           .attr("fill", (d: any) => {
@@ -32,7 +33,7 @@ const CountryFills = ({ mapGroup, path, data, onHover, onLeave }: CountryFillsPr
           .on("mouseout", onLeave);
       })
       .catch(error => {
-        console.error('Error loading country fills:', error);
+        console.error('Error loading fills:', error);
       });
   }, [mapGroup, path, data, onHover, onLeave]);
 

@@ -4,11 +4,14 @@ import * as d3 from 'd3';
 interface CountryBoundariesProps {
   mapGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   path: d3.GeoPath;
+  mapType: "usa" | "world";
 }
 
-const CountryBoundaries = ({ mapGroup, path }: CountryBoundariesProps) => {
+const CountryBoundaries = ({ mapGroup, path, mapType }: CountryBoundariesProps) => {
   useEffect(() => {
-    d3.json("/data/US_bounds.geojson")
+    const geoJsonPath = mapType === "usa" ? "/data/US_bounds.geojson" : "/data/country_bounds.geojson";
+
+    d3.json(geoJsonPath)
       .then((boundariesData: any) => {
         mapGroup.append("g")
           .attr("class", "country-boundaries")
@@ -21,9 +24,9 @@ const CountryBoundaries = ({ mapGroup, path }: CountryBoundariesProps) => {
           .attr("stroke-width", "1px");
       })
       .catch(error => {
-        console.error('Error loading country boundaries:', error);
+        console.error('Error loading boundaries:', error);
       });
-  }, [mapGroup, path]);
+  }, [mapGroup, path, mapType]);
 
   return null;
 };
