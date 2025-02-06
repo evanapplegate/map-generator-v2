@@ -12,11 +12,11 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = utils.sheet_to_json(worksheet);
         
-        // Expect columns: country (or state), gdp (or sales)
+        // Map the Excel columns to our expected format
         const stateData: StateData[] = jsonData.map((row: any) => ({
-          state: row.country || row.state,
-          postalCode: row.country_code || row.state,
-          sales: parseFloat(row.gdp || row.sales) || 0
+          state: row.NAME || row.country || row.state,
+          postalCode: row.NAME || row.country_code || row.state,
+          sales: parseFloat(row.gdp_per_capita || row.gdp || row.sales) || 0
         }));
         
         console.log('Processed Excel data:', stateData);
