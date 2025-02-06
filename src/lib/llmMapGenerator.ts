@@ -12,26 +12,52 @@ The JSON must follow this exact format for world maps:
 {
   "mapType": "world",
   "states": [
-    { "state": "countryName", "postalCode": "ISO3" }
+    { 
+      "state": "countryName", 
+      "postalCode": "ISO3",
+      "label": "Display Name"
+    }
   ],
   "defaultFill": "#hexColor",
   "highlightColors": {
     "ISO3": "#hexColor"
   },
-  "borderColor": "#hexColor"
+  "borderColor": "#hexColor",
+  "showLabels": true
 }
 
 For US maps, use this format with 2-letter state codes:
 {
   "mapType": "us",
   "states": [
-    { "state": "stateName", "postalCode": "ST" }
+    { 
+      "state": "stateName", 
+      "postalCode": "ST",
+      "label": "Display Name"
+    }
   ],
   "defaultFill": "#hexColor",
   "highlightColors": {
     "ST": "#hexColor"
   },
-  "borderColor": "#hexColor"
+  "borderColor": "#hexColor",
+  "showLabels": true
+}
+
+Example: For "world map with blue USA, red China, show labels", respond with:
+{
+  "mapType": "world",
+  "states": [
+    { "state": "United States", "postalCode": "USA", "label": "USA" },
+    { "state": "China", "postalCode": "CHN", "label": "China" }
+  ],
+  "defaultFill": "#D3D3D3",
+  "highlightColors": {
+    "USA": "#0000FF",
+    "CHN": "#FF0000"
+  },
+  "borderColor": "#FFFFFF",
+  "showLabels": true
 }`;
 
   const variations = [
@@ -59,6 +85,8 @@ Validate:
 2. All requested locations are included with correct names and codes
 3. Colors match specific requests (e.g., "blue USA" -> USA should be blue)
 4. Required format elements are present (mapType, states, defaultFill, highlightColors)
+5. Labels are present for all states/countries
+6. Correct ISO3 codes for world maps or 2-letter state codes for US maps
 
 Respond with ONLY a JSON object:
 {
@@ -133,11 +161,6 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           throw new Error('Invalid JSON response from OpenAI');
         }
 
-        if (!parsedResponse.states || !Array.isArray(parsedResponse.states)) {
-          console.error('Invalid response structure:', parsedResponse);
-          throw new Error('Invalid response structure from OpenAI');
-        }
-
         const validation = await validateResponse(parsedResponse, description, apiKey);
         console.log('Validation result:', validation);
 
@@ -150,13 +173,15 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           states: parsedResponse.states.map((state: any) => ({
             state: state.state,
             postalCode: state.postalCode,
+            label: state.label,
             sales: 100
           })),
           maxSales: 100,
           minSales: 0,
           defaultFill: parsedResponse.defaultFill,
           borderColor: parsedResponse.borderColor,
-          highlightColors: parsedResponse.highlightColors
+          highlightColors: parsedResponse.highlightColors,
+          showLabels: parsedResponse.showLabels
         };
       } catch (variationError) {
         console.error(`Error generating variation ${index}:`, variationError);
