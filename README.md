@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# Lovable.dev wroe this whole thing, it's a map generator; give it your openAI API key > enter a map request, e.g. "world map with Australia and the U.S. labeled, color them green > GPT4o reads the request, returns a JSON that's fed to D3 > you get an SVG map you can save and cute up in Illustrator.
 
 ## Project info
 
