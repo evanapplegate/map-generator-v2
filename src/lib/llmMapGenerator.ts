@@ -8,6 +8,14 @@ For US maps (when US states are mentioned), use US_states.geojson for state poly
 
 RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.
 
+When colors are mentioned:
+- "blue" should be #0000FF
+- "red" should be #FF0000
+- "green" should be #008000
+- "purple" should be #800080
+- "yellow" should be #FFFF00
+- For light/pastel variations, use the same colors but at 80% opacity
+
 The JSON must follow this exact format for world maps:
 {
   "mapType": "world",
@@ -42,27 +50,11 @@ For US maps, use this format with 2-letter state codes:
   },
   "borderColor": "#hexColor",
   "showLabels": true
-}
-
-Example: For "world map with blue USA, red China, show labels", respond with:
-{
-  "mapType": "world",
-  "states": [
-    { "state": "United States", "postalCode": "USA", "label": "USA" },
-    { "state": "China", "postalCode": "CHN", "label": "China" }
-  ],
-  "defaultFill": "#D3D3D3",
-  "highlightColors": {
-    "USA": "#0000FF",
-    "CHN": "#FF0000"
-  },
-  "borderColor": "#FFFFFF",
-  "showLabels": true
 }`;
 
   const variations = [
-    "Use vibrant, high-contrast colors for highlighting.",
-    "Use pastel, soft colors for a gentle appearance.",
+    "Use exact colors as specified in the request.",
+    "Use the same colors but at 80% opacity for a softer look.",
   ];
 
   return `${basePrompt}\n${variations[variationIndex]}`;
