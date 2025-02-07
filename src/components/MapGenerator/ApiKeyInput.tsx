@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ApiKeyInputProps {
   onApiKeyChange: (key: string) => void;
@@ -15,7 +16,9 @@ const ApiKeyInput = ({ onApiKeyChange }: ApiKeyInputProps) => {
 
   return (
     <div className="space-y-2">
+      <Label htmlFor="apiKey">Enter OpenAI API key</Label>
       <Input
+        id="apiKey"
         type="password"
         placeholder="Enter your OpenAI API key"
         value={apiKey}
