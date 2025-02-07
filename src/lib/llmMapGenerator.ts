@@ -8,14 +8,6 @@ For US maps (when US states are mentioned), use US_states.geojson for state poly
 
 RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.
 
-When colors are mentioned:
-- "blue" should be #0000FF
-- "red" should be #FF0000
-- "green" should be #008000
-- "purple" should be #800080
-- "yellow" should be #FFFF00
-- For light/pastel variations, use the same colors but at 80% opacity
-
 The JSON must follow this exact format for world maps:
 {
   "mapType": "world",
@@ -61,53 +53,31 @@ For US maps, use this format with 2-letter state codes:
 };
 
 const validateResponse = async (jsonResponse: any, userRequest: string, apiKey: string) => {
-  const openai = new OpenAI({
-    apiKey: apiKey,
-    dangerouslyAllowBrowser: true
-  });
-
-  const validationPrompt = `You are a data validation expert. Validate this map data against the user's requirements.
-User request: "${userRequest}"
-
-Map data:
-${JSON.stringify(jsonResponse, null, 2)}
-
-Validate:
-1. Map type matches the request (world/us)
-2. All requested locations are included with correct names and codes
-3. Colors match specific requests (e.g., "blue USA" -> USA should be blue)
-4. Required format elements are present (mapType, states, defaultFill, highlightColors)
-5. Labels are present for all states/countries
-6. Correct ISO3 codes for world maps or 2-letter state codes for US maps
-
-Respond with ONLY a JSON object:
-{
-  "isValid": boolean,
-  "issues": string[],
-  "suggestions": string[]
-}`;
-
-  try {
-    const validation = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        { role: "system", content: validationPrompt }
-      ],
-      temperature: 0.3,
-    });
-
-    const validationResponse = validation.choices[0]?.message?.content;
-    if (!validationResponse) {
-      console.error('Empty validation response');
-      return { isValid: false, issues: ['Validation failed'] };
-    }
-
-    console.log('Validation response:', validationResponse);
-    return JSON.parse(validationResponse);
-  } catch (error) {
-    console.error('Validation error:', error);
-    return { isValid: false, issues: ['Validation failed'] };
+  // Simple validation to check if the response has the required structure for D3
+  const requiredFields = ['mapType', 'states', 'defaultFill', 'highlightColors', 'showLabels'];
+  const hasRequiredFields = requiredFields.every(field => jsonResponse.hasOwnProperty(field));
+  
+  if (!hasRequiredFields) {
+    return { 
+      isValid: false, 
+      issues: ['Response missing required fields for D3 visualization']
+    };
   }
+
+  // Check if states array is not empty and has required properties
+  const hasValidStates = jsonResponse.states.length > 0 && 
+    jsonResponse.states.every((state: any) => 
+      state.state && state.postalCode && state.label
+    );
+
+  if (!hasValidStates) {
+    return {
+      isValid: false,
+      issues: ['Invalid or missing state data']
+    };
+  }
+
+  return { isValid: true, issues: [] };
 };
 
 export const generateMapInstructions = async (description: string, apiKey: string): Promise<MapData[]> => {
