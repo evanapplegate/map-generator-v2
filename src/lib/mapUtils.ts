@@ -1,3 +1,4 @@
+
 import * as d3 from 'd3';
 import { StateData } from './types';
 import { read, utils } from 'xlsx';
@@ -28,6 +29,7 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
             return {
               state: countryName,
               postalCode: countryName,
+              label: countryName, // Add the label property with the same value as state/country name
               sales: gdpValue
             };
           })
