@@ -18,18 +18,18 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
         // Map the Excel columns to our expected format
         const stateData: StateData[] = jsonData
           .map((row: any) => {
-            // Try different possible column names
             const countryName = row['COUNTRY'] || row['Country'] || row['country'] || row['NAME'] || row['name'];
+            const code = row['CODE'] || row['Code'] || row['code'] || row['ISO'] || row['iso'] || countryName;
             const gdpValue = parseFloat(row['GDP'] || row['gdp'] || row['GDP_PER_CAPITA'] || row['gdp_per_capita'] || row['Value'] || row['value'] || 0);
             
             if (countryName && gdpValue) {
-              console.log('Valid row found:', { countryName, gdpValue });
+              console.log('Valid row found:', { countryName, code, gdpValue });
             }
             
             return {
               state: countryName,
-              postalCode: countryName,
-              label: countryName, // Add the label property with the same value as state/country name
+              postalCode: code,
+              label: countryName,
               sales: gdpValue
             };
           })
@@ -59,3 +59,4 @@ export const formatSalesNumber = (sales: number): string => {
     maximumFractionDigits: 0
   }).format(sales);
 };
+

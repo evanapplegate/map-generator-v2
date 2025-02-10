@@ -1,11 +1,32 @@
-
 import OpenAI from 'openai';
 import { MapData } from './types';
 
 const getSystemPrompt = () => {
-  return `You are a D3.js map visualization expert. Convert the user's map request into specific D3 visualization instructions.
-For world maps (when countries are mentioned), use countries.geojson with ISO3 codes.
-For US maps (when US states are mentioned), use US states with 2-letter postal codes.
+  return `You are a D3.js map visualization expert. Create map visualizations based on the user's request.
+
+For each region mentioned, use these EXACT property mappings:
+
+FOR WORLD MAPS (countries):
+- Use the ISO3 codes from countries.geojson
+- Example country codes: USA, GBR, FRA, DEU, JPN, etc.
+- Region properties structure in geojson:
+  {
+    "properties": {
+      "name": "United States",
+      "iso_a3": "USA"
+    }
+  }
+
+FOR US MAPS (states):
+- Use 2-letter postal codes from US_states.geojson
+- Example state codes: CA, NY, TX, FL, etc.
+- Region properties structure in geojson:
+  {
+    "properties": {
+      "name": "California",
+      "postal": "CA"
+    }
+  }
 
 RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.
 
@@ -13,23 +34,28 @@ The JSON must follow this format:
 {
   "mapType": "world" | "us",
   "states": [
-    { 
-      "state": "regionName", 
-      "postalCode": "stateCode | ISO3",
+    {
+      "state": "Full Name (e.g. 'California' or 'United States')",
+      "postalCode": "Exact code from geojson (e.g. 'CA' or 'USA')",
       "label": "Display Name"
     }
   ],
   "defaultFill": "#hexColor",
   "highlightColors": {
-    "stateCode | ISO3": "#hexColor"
+    "postalCode": "#hexColor"
   },
+  "borderColor": "#hexColor",
   "showLabels": true
-}`;
+}
+
+Examples:
+For US: { "state": "California", "postalCode": "CA", "label": "California" }
+For World: { "state": "United States", "postalCode": "USA", "label": "United States" }`;
 };
 
 const validateResponse = (jsonResponse: any): { isValid: boolean; issues: string[] } => {
   // Basic structure validation
-  const requiredFields = ['mapType', 'states', 'defaultFill', 'highlightColors', 'showLabels'];
+  const requiredFields = ['mapType', 'states', 'defaultFill', 'highlightColors', 'borderColor', 'showLabels'];
   if (!requiredFields.every(field => jsonResponse.hasOwnProperty(field))) {
     return { 
       isValid: false, 
@@ -166,4 +192,3 @@ export const generateMapInstructions = async (description: string, apiKey: strin
     throw error;
   }
 };
-
