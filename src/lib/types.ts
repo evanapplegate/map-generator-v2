@@ -1,3 +1,4 @@
+
 export interface MapRequest {
   description: string;
   file: File | null;
@@ -22,6 +23,7 @@ export interface MapData {
   boundaryWidth?: string;
   labelColor?: string;
   labelSize?: string;
+  mapType: 'us' | 'world';
 }
 
 export interface SimpleMapRequest {

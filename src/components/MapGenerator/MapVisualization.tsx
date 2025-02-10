@@ -30,8 +30,8 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    // Check postal codes to determine map type
-    const isUSMap = data.states.every(s => /^[A-Z]{2}$/.test(s.postalCode));
+    // Use the explicit map type from the data
+    const isUSMap = data.mapType === 'us';
     console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
 
     const projection = isUSMap 
