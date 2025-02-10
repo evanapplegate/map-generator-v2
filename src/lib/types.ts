@@ -8,6 +8,7 @@ export interface MapRequest {
 export interface StateData {
   state: string;
   postalCode: string;
+  label: string;
   sales: number;
 }
 
@@ -23,6 +24,7 @@ export interface MapData {
   boundaryWidth?: string;
   labelColor?: string;
   labelSize?: string;
+  showLabels?: boolean;
   mapType: 'us' | 'world';
 }
 
