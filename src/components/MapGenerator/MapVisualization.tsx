@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { MapData } from '@/lib/types';
@@ -29,7 +30,8 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    const isUSMap = data.states.some(s => /^[A-Z]{2}$/.test(s.state));
+    // Check postal codes to determine map type
+    const isUSMap = data.states.every(s => /^[A-Z]{2}$/.test(s.postalCode));
     console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
 
     const projection = isUSMap 
@@ -60,13 +62,9 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .join("path")
         .attr("d", path)
         .attr("fill", (d: any) => {
-          const stateName = d.properties.NAME || d.properties.name;
-          const matchedState = data.states.find(s => 
-            s.state.toLowerCase() === stateName.toLowerCase() ||
-            s.postalCode === stateName
-          );
-          if (matchedState) {
-            return data.highlightColors?.[matchedState.postalCode] || data.highlightColor || "#ef4444";
+          const code = isUSMap ? d.properties.postal : d.properties.iso_a3;
+          if (data.highlightColors?.[code]) {
+            return data.highlightColors[code];
           }
           return data.defaultFill || "#f3f3f3";
         });
@@ -79,7 +77,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke", "#ffffff")
         .attr("stroke-width", "1");
 
-      // Add labels
+      // Add labels where specified
       svg.append("g")
         .selectAll("text")
         .data(regions.features)
@@ -91,12 +89,9 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("text-anchor", "middle")
         .attr("dy", ".35em")
         .text((d: any) => {
-          const stateName = d.properties.NAME || d.properties.name;
-          const matchedState = data.states.find(s => 
-            s.state.toLowerCase() === stateName.toLowerCase() ||
-            s.postalCode === stateName
-          );
-          return matchedState ? stateName.split(/[.,]/)[0].trim() : "";
+          const code = isUSMap ? d.properties.postal : d.properties.iso_a3;
+          const shouldLabel = data.states.some(s => s.postalCode === code);
+          return shouldLabel ? (isUSMap ? code : d.properties.name) : "";
         })
         .attr("fill", "#000000")
         .attr("font-size", "14px");
@@ -114,10 +109,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
       svg.selectAll("path")
         .on("mouseover", (event, d: any) => {
-          const geoName = d.properties?.NAME || d.properties?.name;
+          const name = isUSMap ? d.properties.name : d.properties.name;
           tooltip
             .style("visibility", "visible")
-            .html(`<strong>${geoName}</strong>`);
+            .html(`<strong>${name}</strong>`);
         })
         .on("mousemove", (event) => {
           tooltip
@@ -127,7 +122,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .on("mouseout", () => {
           tooltip.style("visibility", "hidden");
         });
-
     })
     .catch(error => {
       console.error('Error loading map data:', error);
