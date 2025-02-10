@@ -1,79 +1,91 @@
+
 import OpenAI from 'openai';
 import { MapData } from './types';
 
-const getSystemPrompt = (variationIndex: number) => {
-  const basePrompt = `You are a D3.js map visualization expert. Convert the user's map request into specific D3 visualization instructions.
-For world maps (when countries are mentioned), use countries.geojson for country polygons and country_bounds.geojson for national boundaries.
-For US maps (when US states are mentioned), use US_states.geojson for state polygons and US_bounds.geojson for national boundaries.
+const getSystemPrompt = () => {
+  return `You are a D3.js map visualization expert. Convert the user's map request into specific D3 visualization instructions.
+For world maps (when countries are mentioned), use countries.geojson with ISO3 codes.
+For US maps (when US states are mentioned), use US states with 2-letter postal codes.
 
 RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.
 
-The JSON must follow this exact format for world maps:
+The JSON must follow this format:
 {
-  "mapType": "world",
+  "mapType": "world" | "us",
   "states": [
     { 
-      "state": "countryName", 
-      "postalCode": "ISO3",
+      "state": "regionName", 
+      "postalCode": "stateCode | ISO3",
       "label": "Display Name"
     }
   ],
   "defaultFill": "#hexColor",
   "highlightColors": {
-    "ISO3": "#hexColor"
+    "stateCode | ISO3": "#hexColor"
   },
-  "borderColor": "#hexColor",
-  "showLabels": true
-}
-
-For US maps, use this format with 2-letter state codes:
-{
-  "mapType": "us",
-  "states": [
-    { 
-      "state": "stateName", 
-      "postalCode": "ST",
-      "label": "Display Name"
-    }
-  ],
-  "defaultFill": "#hexColor",
-  "highlightColors": {
-    "ST": "#hexColor"
-  },
-  "borderColor": "#hexColor",
   "showLabels": true
 }`;
-
-  const variations = [
-    "Use exact colors as specified in the request.",
-    "Use the same colors but at 80% opacity for a softer look.",
-  ];
-
-  return `${basePrompt}\n${variations[variationIndex]}`;
 };
 
-const validateResponse = async (jsonResponse: any, userRequest: string, apiKey: string) => {
-  // Simple validation to check if the response has the required structure for D3
+const validateResponse = (jsonResponse: any): { isValid: boolean; issues: string[] } => {
+  // Basic structure validation
   const requiredFields = ['mapType', 'states', 'defaultFill', 'highlightColors', 'showLabels'];
-  const hasRequiredFields = requiredFields.every(field => jsonResponse.hasOwnProperty(field));
-  
-  if (!hasRequiredFields) {
+  if (!requiredFields.every(field => jsonResponse.hasOwnProperty(field))) {
     return { 
       isValid: false, 
-      issues: ['Response missing required fields for D3 visualization']
+      issues: ['Missing required fields']
     };
   }
 
-  // Check if states array is not empty and has required properties
-  const hasValidStates = jsonResponse.states.length > 0 && 
-    jsonResponse.states.every((state: any) => 
-      state.state && state.postalCode && state.label
-    );
+  // Map type validation
+  if (!['world', 'us'].includes(jsonResponse.mapType)) {
+    return {
+      isValid: false,
+      issues: ['Invalid map type']
+    };
+  }
+
+  // States array validation
+  if (!Array.isArray(jsonResponse.states) || jsonResponse.states.length === 0) {
+    return {
+      isValid: false,
+      issues: ['Invalid or empty states array']
+    };
+  }
+
+  // State objects validation
+  const hasValidStates = jsonResponse.states.every((state: any) => 
+    state.state && 
+    state.postalCode && 
+    state.label &&
+    typeof state.state === 'string' &&
+    typeof state.postalCode === 'string' &&
+    typeof state.label === 'string'
+  );
 
   if (!hasValidStates) {
     return {
       isValid: false,
-      issues: ['Invalid or missing state data']
+      issues: ['Invalid state data structure']
+    };
+  }
+
+  // Validate postal codes based on map type
+  const isValidPostalCode = (code: string, mapType: string) => {
+    if (mapType === 'us') {
+      return /^[A-Z]{2}$/.test(code);
+    }
+    return /^[A-Z]{3}$/.test(code);
+  };
+
+  const hasValidPostalCodes = jsonResponse.states.every((state: any) =>
+    isValidPostalCode(state.postalCode, jsonResponse.mapType)
+  );
+
+  if (!hasValidPostalCodes) {
+    return {
+      isValid: false,
+      issues: ['Invalid postal codes for map type']
     };
   }
 
@@ -99,15 +111,14 @@ export const generateMapInstructions = async (description: string, apiKey: strin
         const completion = await openai.chat.completions.create({
           model: "gpt-4",
           messages: [
-            { role: "system", content: getSystemPrompt(index) },
+            { role: "system", content: getSystemPrompt() },
             { role: "user", content: description }
           ],
-          temperature: 0.8,
+          temperature: 0.7,
         });
 
         const response = completion.choices[0]?.message?.content;
         if (!response) {
-          console.error('Empty response from OpenAI');
           throw new Error('No response from OpenAI');
         }
 
@@ -119,15 +130,11 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           console.log(`Parsed response for variation ${index}:`, parsedResponse);
         } catch (parseError) {
           console.error('JSON parse error:', parseError);
-          console.error('Invalid JSON response:', response);
           throw new Error('Invalid JSON response from OpenAI');
         }
 
-        const validation = await validateResponse(parsedResponse, description, apiKey);
-        console.log('Validation result:', validation);
-
+        const validation = validateResponse(parsedResponse);
         if (!validation.isValid) {
-          console.error('Validation issues:', validation.issues);
           throw new Error(`Invalid map data: ${validation.issues.join(', ')}`);
         }
 
@@ -141,7 +148,7 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           maxSales: 100,
           minSales: 0,
           defaultFill: parsedResponse.defaultFill,
-          borderColor: parsedResponse.borderColor,
+          borderColor: parsedResponse.borderColor || '#ffffff',
           highlightColors: parsedResponse.highlightColors,
           showLabels: parsedResponse.showLabels
         };
