@@ -150,7 +150,8 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           defaultFill: parsedResponse.defaultFill,
           borderColor: parsedResponse.borderColor || '#ffffff',
           highlightColors: parsedResponse.highlightColors,
-          showLabels: parsedResponse.showLabels
+          showLabels: parsedResponse.showLabels,
+          mapType: parsedResponse.mapType // Add this line to include the mapType
         };
       } catch (variationError) {
         console.error(`Error generating variation ${index}:`, variationError);
@@ -165,3 +166,4 @@ export const generateMapInstructions = async (description: string, apiKey: strin
     throw error;
   }
 };
+
