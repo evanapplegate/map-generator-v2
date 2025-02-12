@@ -30,7 +30,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       .attr("viewBox", [0, 0, width, height].join(" "))
       .attr("style", "max-width: 100%; height: auto;");
 
-    // Use the explicit map type from the data
     const isUSMap = data.mapType === 'us';
     console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
 
@@ -55,6 +54,9 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
+      // Debug: Print the first feature to see its structure
+      console.log('First region feature:', regions.features[0]);
+      
       // Draw regions - STRICTLY NO STROKE
       svg.append("g")
         .selectAll("path")
@@ -62,7 +64,13 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .join("path")
         .attr("d", path)
         .attr("fill", (d: any) => {
-          const code = isUSMap ? d.properties.postal : d.properties.iso_a3;
+          // For world maps, try both ISO_A3 and iso_a3
+          const code = isUSMap 
+            ? d.properties.postal 
+            : (d.properties.ISO_A3 || d.properties.iso_a3);
+            
+          console.log('Region code:', code, 'Has highlight?:', !!data.highlightColors?.[code]);
+          
           if (data.highlightColors?.[code]) {
             return data.highlightColors[code];
           }
@@ -90,7 +98,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           .attr("text-anchor", "middle")
           .attr("dy", ".35em")
           .text((d: any) => {
-            const code = isUSMap ? d.properties.postal : d.properties.iso_a3;
+            const code = isUSMap 
+              ? d.properties.postal 
+              : (d.properties.ISO_A3 || d.properties.iso_a3);
+              
             const shouldLabel = data.states.some(s => s.postalCode === code);
             return shouldLabel ? (isUSMap ? code : d.properties.name) : "";
           })
@@ -111,10 +122,14 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
       svg.selectAll("path")
         .on("mouseover", (event, d: any) => {
-          const name = isUSMap ? d.properties.name : d.properties.name;
+          const name = d.properties.name || d.properties.NAME;
+          const code = isUSMap 
+            ? d.properties.postal 
+            : (d.properties.ISO_A3 || d.properties.iso_a3);
+            
           tooltip
             .style("visibility", "visible")
-            .html(`<strong>${name}</strong>`);
+            .html(`<strong>${name}</strong> (${code})`);
         })
         .on("mousemove", (event) => {
           tooltip
