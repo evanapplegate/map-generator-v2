@@ -78,23 +78,25 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("stroke-width", "1");
 
       // Add labels where specified
-      svg.append("g")
-        .selectAll("text")
-        .data(regions.features)
-        .join("text")
-        .attr("transform", (d: any) => {
-          const centroid = path.centroid(d);
-          return `translate(${centroid[0]},${centroid[1]})`;
-        })
-        .attr("text-anchor", "middle")
-        .attr("dy", ".35em")
-        .text((d: any) => {
-          const code = isUSMap ? d.properties.postal : d.properties.iso_a3;
-          const shouldLabel = data.states.some(s => s.postalCode === code);
-          return shouldLabel ? (isUSMap ? code : d.properties.name) : "";
-        })
-        .attr("fill", "#000000")
-        .attr("font-size", "14px");
+      if (data.showLabels) {
+        svg.append("g")
+          .selectAll("text")
+          .data(regions.features)
+          .join("text")
+          .attr("transform", (d: any) => {
+            const centroid = path.centroid(d);
+            return `translate(${centroid[0]},${centroid[1]})`;
+          })
+          .attr("text-anchor", "middle")
+          .attr("dy", ".35em")
+          .text((d: any) => {
+            const code = isUSMap ? d.properties.postal : d.properties.iso_a3;
+            const shouldLabel = data.states.some(s => s.postalCode === code);
+            return shouldLabel ? (isUSMap ? code : d.properties.name) : "";
+          })
+          .attr("fill", "#000000")
+          .attr("font-size", "14px");
+      }
 
       // Add tooltips
       const tooltip = d3.select("body")
