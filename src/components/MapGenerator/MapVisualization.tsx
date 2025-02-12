@@ -119,7 +119,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           .attr("fill", "#000000")
           .attr("font-size", "12px")
           .attr("font-weight", "bold")
-          .style("text-shadow", "1px 1px 1px rgba(255,255,255,0.8)")
           .style("pointer-events", "none");
       }
 
