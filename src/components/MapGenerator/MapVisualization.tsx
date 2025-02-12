@@ -18,6 +18,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
       return;
     }
 
+    console.log('Rendering map with data:', data);
+    console.log('Show labels?', data.showLabels);
+    console.log('Highlight colors:', data.highlightColors);
+
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
@@ -86,12 +90,18 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
       // Add labels where specified
       if (data.showLabels) {
+        console.log('Adding labels...');
         svg.append("g")
           .selectAll("text")
           .data(regions.features)
           .join("text")
           .attr("transform", (d: any) => {
             const centroid = path.centroid(d);
+            console.log('Centroid for feature:', centroid);
+            if (isNaN(centroid[0]) || isNaN(centroid[1])) {
+              console.log('Invalid centroid for feature:', d);
+              return null;
+            }
             return `translate(${centroid[0]},${centroid[1]})`;
           })
           .attr("text-anchor", "middle")
@@ -100,17 +110,17 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             const code = isUSMap 
               ? d.properties.postal 
               : (d.properties.ISO_A3 || d.properties.iso_a3);
-              
-            // Show label if the country/state is highlighted
-            if (data.highlightColors?.[code]) {
-              return isUSMap ? code : d.properties.name;
-            }
-            return "";
+            
+            const name = isUSMap ? code : d.properties.NAME || d.properties.name;
+            console.log('Label check:', { code, name, hasHighlight: !!data.highlightColors?.[code] });
+            
+            return data.highlightColors?.[code] ? name : "";
           })
           .attr("fill", "#000000")
-          .attr("font-size", "10px")
+          .attr("font-size", "12px")
           .attr("font-weight", "bold")
-          .style("text-shadow", "1px 1px 1px rgba(255,255,255,0.5)");
+          .style("text-shadow", "1px 1px 1px rgba(255,255,255,0.8)")
+          .style("pointer-events", "none");
       }
 
       // Add tooltips
@@ -126,7 +136,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
       svg.selectAll("path")
         .on("mouseover", (event, d: any) => {
-          const name = d.properties.name || d.properties.NAME;
+          const name = d.properties.NAME || d.properties.name;
           const code = isUSMap 
             ? d.properties.postal 
             : (d.properties.ISO_A3 || d.properties.iso_a3);
