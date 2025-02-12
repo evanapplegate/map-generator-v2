@@ -64,7 +64,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .join("path")
         .attr("d", path)
         .attr("fill", (d: any) => {
-          // For world maps, try both ISO_A3 and iso_a3
           const code = isUSMap 
             ? d.properties.postal 
             : (d.properties.ISO_A3 || d.properties.iso_a3);
@@ -102,11 +101,16 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
               ? d.properties.postal 
               : (d.properties.ISO_A3 || d.properties.iso_a3);
               
-            const shouldLabel = data.states.some(s => s.postalCode === code);
-            return shouldLabel ? (isUSMap ? code : d.properties.name) : "";
+            // Show label if the country/state is highlighted
+            if (data.highlightColors?.[code]) {
+              return isUSMap ? code : d.properties.name;
+            }
+            return "";
           })
           .attr("fill", "#000000")
-          .attr("font-size", "14px");
+          .attr("font-size", "10px")
+          .attr("font-weight", "bold")
+          .style("text-shadow", "1px 1px 1px rgba(255,255,255,0.5)");
       }
 
       // Add tooltips
