@@ -135,7 +135,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
       svg.selectAll("path")
         .on("mouseover", (event, d: any) => {
-          const name = d.properties.NAME || d.properties.name;
+          const name = d.properties?.NAME || d.properties?.name || 'Unknown Region';
           const code = isUSMap 
             ? d.properties.postal 
             : (d.properties.ISO_A3 || d.properties.iso_a3);
