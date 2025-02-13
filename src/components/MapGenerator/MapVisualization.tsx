@@ -21,6 +21,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
     console.log('Rendering map with data:', data);
     console.log('Show labels?', data.showLabels);
     console.log('Highlight colors:', data.highlightColors);
+    console.log('Default fill color:', data.defaultFill || "#ddd8d4");
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -58,7 +59,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
-      // Debug: Print the first feature to see its structure
       console.log('First region feature:', regions.features[0]);
       
       // Draw regions - STRICTLY NO STROKE
@@ -72,12 +72,12 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             ? d.properties.postal 
             : (d.properties.ISO_A3 || d.properties.iso_a3);
             
-          console.log('Region code:', code, 'Has highlight?:', !!data.highlightColors?.[code]);
+          console.log('Region code:', code, 'Has highlight?:', !!data.highlightColors?.[code], 'Fill:', data.highlightColors?.[code] || data.defaultFill || "#ddd8d4");
           
           if (data.highlightColors?.[code]) {
             return data.highlightColors[code];
           }
-          return data.defaultFill || "#ddd8d4"; // Changed default fill color here
+          return data.defaultFill || "#ddd8d4";
         });
 
       // Draw bounds - STRICTLY 1PX WHITE STROKE
