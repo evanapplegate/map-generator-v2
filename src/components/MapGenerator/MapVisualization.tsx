@@ -77,7 +77,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           if (data.highlightColors?.[code]) {
             return data.highlightColors[code];
           }
-          return data.defaultFill || "#f3f3f3";
+          return data.defaultFill || "#ddd8d4"; // Changed default fill color here
         });
 
       // Draw bounds - STRICTLY 1PX WHITE STROKE
