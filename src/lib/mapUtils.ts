@@ -18,8 +18,10 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
         // Map the Excel columns to our expected format
         const stateData: StateData[] = jsonData
           .map((row: any) => {
+            console.log('Processing row:', row);
+            
             const countryName = row['COUNTRY'] || row['Country'] || row['country'] || row['NAME'] || row['name'];
-            const code = row['CODE'] || row['Code'] || row['code'] || row['ISO'] || row['iso'] || countryName;
+            const code = row['CODE'] || row['Code'] || row['code'] || row['ISO'] || row['iso'] || row['ISO_A3'] || row['iso_a3'] || countryName;
             const gdpValue = parseFloat(row['GDP'] || row['gdp'] || row['GDP_PER_CAPITA'] || row['gdp_per_capita'] || row['Value'] || row['value'] || 0);
             
             if (countryName && gdpValue) {
@@ -33,9 +35,17 @@ export const processExcelFile = async (file: File): Promise<StateData[]> => {
               sales: gdpValue
             };
           })
-          .filter(data => data.state && data.sales > 0);
+          .filter(data => {
+            const isValid = data.state && data.sales > 0;
+            if (!isValid) {
+              console.log('Filtered out invalid row:', data);
+            }
+            return isValid;
+          });
         
         console.log('Processed state data:', stateData);
+        console.log('Number of valid entries:', stateData.length);
+        
         resolve(stateData);
       } catch (error) {
         console.error('Error processing Excel file:', error);
