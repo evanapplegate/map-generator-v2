@@ -1,26 +1,32 @@
-
 import OpenAI from 'openai';
 import { MapData } from './types';
 
 const getSystemPrompt = () => {
   return `You are a D3.js map visualization expert. Create map visualizations based on the user's request.
 
-For each region mentioned, use these EXACT property mappings and make sure to convert common names to the correct codes:
+For each region mentioned, use these EXACT property mappings:
 
 FOR WORLD MAPS (countries):
 - Use the ISO3 codes from countries.geojson
-- Example mappings:
-  "United States" or "USA" -> "USA"
-  "United Kingdom" or "Britain" or "UK" -> "GBR"
-  "Ivory Coast" or "Côte d'Ivoire" -> "CIV"
-  "DR Congo" or "Democratic Republic of the Congo" -> "COD"
-  "Republic of Congo" or "Congo" -> "COG"
+- Example country codes: USA, GBR, FRA, DEU, JPN, etc.
+- Region properties structure in geojson:
+  {
+    "properties": {
+      "name": "United States",
+      "iso_a3": "USA"
+    }
+  }
 
 FOR US MAPS (states):
 - Use 2-letter postal codes from US_states.geojson
-- Example mappings:
-  "California" -> "CA"
-  "New York" -> "NY"
+- Example state codes: CA, NY, TX, FL, etc.
+- Region properties structure in geojson:
+  {
+    "properties": {
+      "name": "California",
+      "postal": "CA"
+    }
+  }
 
 RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.
 
@@ -40,7 +46,11 @@ The JSON must follow this format:
   },
   "borderColor": "#hexColor",
   "showLabels": true
-}`;
+}
+
+Examples:
+For US: { "state": "California", "postalCode": "CA", "label": "California" }
+For World: { "state": "United States", "postalCode": "USA", "label": "United States" }`;
 };
 
 const validateResponse = (jsonResponse: any): { isValid: boolean; issues: string[] } => {
@@ -128,7 +138,7 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           model: "gpt-4",
           messages: [
             { role: "system", content: getSystemPrompt() },
-            { role: "user", content: `Convert any country names to their exact ISO3 codes and generate a map visualization for: ${description}` }
+            { role: "user", content: description }
           ],
           temperature: 0.7,
         });
@@ -167,7 +177,7 @@ export const generateMapInstructions = async (description: string, apiKey: strin
           borderColor: parsedResponse.borderColor || '#ffffff',
           highlightColors: parsedResponse.highlightColors,
           showLabels: parsedResponse.showLabels,
-          mapType: parsedResponse.mapType
+          mapType: parsedResponse.mapType // Add this line to include the mapType
         };
       } catch (variationError) {
         console.error(`Error generating variation ${index}:`, variationError);
