@@ -58,7 +58,6 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         ]);
 
     dataPromise.then(async ([regions, bounds]: [any, any]) => {
-      // Debug: Print the first feature to see its structure
       console.log('First region feature:', regions.features[0]);
       
       // Draw regions - STRICTLY NO STROKE
@@ -69,8 +68,8 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
         .attr("d", path)
         .attr("fill", (d: any) => {
           const code = isUSMap 
-            ? d.properties.postal 
-            : (d.properties.ISO_A3 || d.properties.iso_a3);
+            ? d.properties?.postal 
+            : (d.properties?.ISO_A3 || d.properties?.iso_a3);
             
           console.log('Region code:', code, 'Has highlight?:', !!data.highlightColors?.[code]);
           
@@ -108,10 +107,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           .attr("dy", ".35em")
           .text((d: any) => {
             const code = isUSMap 
-              ? d.properties.postal 
-              : (d.properties.ISO_A3 || d.properties.iso_a3);
+              ? d.properties?.postal 
+              : (d.properties?.ISO_A3 || d.properties?.iso_a3);
             
-            const name = isUSMap ? code : d.properties.NAME || d.properties.name;
+            const name = isUSMap ? code : (d.properties?.NAME || d.properties?.name || code);
             console.log('Label check:', { code, name, hasHighlight: !!data.highlightColors?.[code] });
             
             return data.highlightColors?.[code] ? name : "";
@@ -135,10 +134,10 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
 
       svg.selectAll("path")
         .on("mouseover", (event, d: any) => {
-          const name = d.properties.NAME || d.properties.name;
+          const name = d.properties?.NAME || d.properties?.name || 'Unknown';
           const code = isUSMap 
-            ? d.properties.postal 
-            : (d.properties.ISO_A3 || d.properties.iso_a3);
+            ? d.properties?.postal 
+            : (d.properties?.ISO_A3 || d.properties?.iso_a3 || 'Unknown');
             
           tooltip
             .style("visibility", "visible")
