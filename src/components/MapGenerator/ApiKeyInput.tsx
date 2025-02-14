@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +7,7 @@ interface ApiKeyInputProps {
 }
 
 const ApiKeyInput = ({ onApiKeyChange }: ApiKeyInputProps) => {
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState('fake-key');
 
   useEffect(() => {
     // Notify parent of initial value
@@ -26,9 +25,6 @@ const ApiKeyInput = ({ onApiKeyChange }: ApiKeyInputProps) => {
         onChange={(e) => setApiKey(e.target.value)}
         className="w-full"
       />
-      <p className="text-sm text-gray-500">
-        Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">OpenAI's dashboard</a>
-      </p>
     </div>
   );
 };
