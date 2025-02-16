@@ -40,9 +40,9 @@ const MapForm = ({ onSubmit }: MapFormProps) => {
         />
       </div>
       
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <FileUpload onFileSelect={(file) => setFile(file)} />
-      </div>
+      </div> */}
       
       <Button type="submit" className="w-full">
         Generate Map
