@@ -16,11 +16,11 @@ const ApiKeyInput = ({ onApiKeyChange }: ApiKeyInputProps) => {
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="apiKey">Enter OpenAI API key</Label>
+      <Label htmlFor="apiKey">Enter Claude API key</Label>
       <Input
         id="apiKey"
         type="password"
-        placeholder="Enter your OpenAI API key"
+        placeholder="Enter your Claude API key"
         value={apiKey}
         onChange={(e) => setApiKey(e.target.value)}
         className="w-full"

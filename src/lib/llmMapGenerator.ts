@@ -1,4 +1,3 @@
-import OpenAI from 'openai';
 import { MapData } from './types';
 
 const getSystemPrompt = () => {
@@ -121,71 +120,62 @@ const validateResponse = (jsonResponse: any): { isValid: boolean; issues: string
 export const generateMapInstructions = async (description: string, apiKey: string): Promise<MapData[]> => {
   if (!apiKey) {
     console.log('No API key provided');
-    throw new Error('OpenAI API key required for map generation');
+    throw new Error('Claude API key required for map generation');
   }
 
-  const openai = new OpenAI({
-    apiKey: apiKey,
-    dangerouslyAllowBrowser: true
-  });
-
   try {
-    console.log('Sending request to OpenAI:', description);
+    console.log('Sending request to Claude:', description);
     
     const variations = await Promise.all([0, 1].map(async (index) => {
       try {
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4",
-          messages: [
-            { role: "system", content: getSystemPrompt() },
-            { role: "user", content: description }
-          ],
-          temperature: 0.7,
+        const response = await fetch('/api/claude', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            apiKey,
+            system: getSystemPrompt(),
+            messages: [
+              { role: "user", content: description }
+            ]
+          })
         });
 
-        const response = completion.choices[0]?.message?.content;
-        if (!response) {
-          throw new Error('No response from OpenAI');
+        if (!response.ok) {
+          const error = await response.text();
+          console.error(`Claude API error for variation ${index}:`, error);
+          throw new Error(`Claude API error: ${error}`);
         }
 
-        console.log(`OpenAI raw response for variation ${index}:`, response);
-        
-        let parsedResponse;
+        const data = await response.json();
+        const content = data.content?.[0]?.text;
+        if (!content) {
+          throw new Error('No response from Claude');
+        }
+
+        console.log(`Claude raw response for variation ${index}:`, content);
+
+        let jsonResponse;
         try {
-          parsedResponse = JSON.parse(response);
-          console.log(`Parsed response for variation ${index}:`, parsedResponse);
-        } catch (parseError) {
-          console.error('JSON parse error:', parseError);
-          throw new Error('Invalid JSON response from OpenAI');
+          jsonResponse = JSON.parse(content);
+        } catch (e) {
+          console.error('Failed to parse JSON from Claude response:', e);
+          throw new Error('Invalid JSON response from Claude');
         }
 
-        const validation = validateResponse(parsedResponse);
+        const validation = validateResponse(jsonResponse);
         if (!validation.isValid) {
-          throw new Error(`Invalid map data: ${validation.issues.join(', ')}`);
+          throw new Error(`Invalid response format: ${validation.issues.join(', ')}`);
         }
 
-        return {
-          states: parsedResponse.states.map((state: any) => ({
-            state: state.state,
-            postalCode: state.postalCode,
-            label: state.label,
-            sales: 100
-          })),
-          maxSales: 100,
-          minSales: 0,
-          defaultFill: parsedResponse.defaultFill,
-          borderColor: parsedResponse.borderColor || '#ffffff',
-          highlightColors: parsedResponse.highlightColors,
-          showLabels: parsedResponse.showLabels,
-          mapType: parsedResponse.mapType // Add this line to include the mapType
-        };
-      } catch (variationError) {
-        console.error(`Error generating variation ${index}:`, variationError);
-        throw variationError;
+        return jsonResponse;
+      } catch (error) {
+        console.error(`Error generating variation ${index}:`, error);
+        throw error;
       }
     }));
 
-    console.log('Generated map variations:', variations);
     return variations;
   } catch (error) {
     console.error('Error in generateMapInstructions:', error);

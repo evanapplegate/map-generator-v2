@@ -35,7 +35,8 @@ const Index = () => {
       } else {
         console.log('Using LLM to interpret request');
         if (!request.apiKey) {
-          throw new Error('OpenAI API key is required');
+          console.log('No API key provided');
+          throw new Error('Claude API key is required');
         }
         newMapData = await generateMapInstructions(request.description, request.apiKey);
       }
