@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { MapData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import ExportButtons from './ExportButtons';
 
 interface MapVisualizationProps {
   data: MapData;
@@ -10,7 +11,25 @@ interface MapVisualizationProps {
 const MapVisualization = ({ data }: MapVisualizationProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [geoData, setGeoData] = useState<{ regions: any; bounds: any } | null>(null);
   const { toast } = useToast();
+
+  const handleExport = async (type: string) => {
+    if (!svgRef.current) return;
+    
+    if (type === 'svg') {
+      const svgData = new XMLSerializer().serializeToString(svgRef.current);
+      const blob = new Blob([svgData], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'map.svg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
   // Reset loading state whenever data changes
   useEffect(() => {
@@ -61,6 +80,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             ]);
 
         const [regions, bounds] = await dataPromise;
+        setGeoData({ regions, bounds });
         console.log('First region feature:', regions.features[0]);
         
         // Draw regions - STRICTLY NO STROKE
@@ -197,6 +217,11 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             height: 'auto',
             aspectRatio: '16/9',
           }}
+        />
+        <ExportButtons 
+          onExport={handleExport}
+          mapData={data}
+          geojsonData={geoData}
         />
       </div>
     </div>

@@ -7,7 +7,6 @@ import { generateMapInstructions } from "@/lib/llmMapGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { saveAs } from 'file-saver';
 
 const Index = () => {
   const [mapVariations, setMapVariations] = useState<MapData[] | null>(null);
@@ -124,11 +123,18 @@ const Index = () => {
       return;
     }
 
-    saveAs(blob, `map-export-${index + 1}.svg`);
-    toast({
-      title: "Success",
-      description: "Map exported successfully!",
-    });
+    if (!blob) {
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `map-export-${index + 1}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
