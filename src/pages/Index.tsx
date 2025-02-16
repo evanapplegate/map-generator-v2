@@ -149,13 +149,14 @@ const Index = () => {
             {isLoading ? (
               <div className="space-y-4">
                 {Array(2).fill(null).map((_, i) => (
-                  <div key={i} className="bg-white p-6 rounded-lg shadow-lg space-y-4">
+                  <div key={i} className="bg-white p-6 rounded-lg shadow-lg">
                     <div className="text-center mb-4 text-lg font-semibold text-gray-600">
                       Variation {i + 1}
                     </div>
-                    <Skeleton className="h-[400px] w-full rounded-lg animate-pulse" />
-                    <div className="flex justify-end space-x-4">
-                      <Skeleton className="h-10 w-24" />
+                    <div className="h-[400px] w-full flex items-center justify-center bg-gray-50 rounded-lg">
+                      <div className="text-lg font-medium text-gray-600">
+                        Generating map...
+                      </div>
                     </div>
                   </div>
                 ))}
