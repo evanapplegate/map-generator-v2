@@ -34,7 +34,8 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           .attr("width", width)
           .attr("height", height)
           .attr("viewBox", [0, 0, width, height].join(" "))
-          .attr("style", "max-width: 100%; height: auto;");
+          .attr("style", "max-width: 100%; height: auto;")
+          .style("background-color", "#F9F5F1");
 
         const isUSMap = data.mapType === 'us';
         console.log('Map type:', isUSMap ? 'US Map' : 'World Map');
@@ -86,7 +87,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
           .datum(bounds)
           .attr("d", path)
           .attr("fill", "none")
-          .attr("stroke", "#ffffff")
+          .attr("stroke", "#F9F5F1")
           .attr("stroke-width", "1");
 
         // Add labels where specified
@@ -173,7 +174,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
   }, [data, toast]);
 
   return (
-    <div className="w-full overflow-x-auto bg-white rounded-lg shadow-lg p-4">
+    <div className="w-full overflow-x-auto bg-[#F9F5F1] rounded-lg shadow-lg p-4">
       <div style={{ position: 'relative' }}>
         {isLoading && (
           <div style={{
@@ -181,7 +182,7 @@ const MapVisualization = ({ data }: MapVisualizationProps) => {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            backgroundColor: 'rgba(249, 245, 241, 0.9)',
             padding: '8px 16px',
             borderRadius: '4px',
             zIndex: 1000,

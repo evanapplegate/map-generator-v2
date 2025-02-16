@@ -27,10 +27,13 @@ const MapForm = ({ onSubmit }: MapFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <ApiKeyInput onApiKeyChange={setApiKey} />
+      <div className="space-y-2">
+        <Label htmlFor="apiKey" className="text-[#8d7a69]">Enter Claude API Key</Label>
+        <ApiKeyInput onApiKeyChange={setApiKey} />
+      </div>
       
       <div className="space-y-2">
-        <Label htmlFor="description">Map Description</Label>
+        <Label htmlFor="description" className="text-[#8d7a69]">Map Description</Label>
         <Textarea
           id="description"
           placeholder="Describe your map requirements... (e.g., 'USA map, light gray fill, white boundaries, label CA NY MT + make those states red')"
@@ -44,7 +47,7 @@ const MapForm = ({ onSubmit }: MapFormProps) => {
         <FileUpload onFileSelect={(file) => setFile(file)} />
       </div> */}
       
-      <Button type="submit" className="w-full">
+      <Button type="submit" className="w-full bg-[#8d7a69] text-white hover:bg-[#8d7a69]/90">
         Generate Map
       </Button>
     </form>

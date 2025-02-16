@@ -10,9 +10,9 @@ const ExportButtons = ({ onExport }: ExportButtonsProps) => {
   return (
     <div className="flex gap-4">
       <Button
-        variant="outline"
+        variant="default"
         onClick={() => onExport('svg')}
-        className="flex items-center gap-2"
+        className="bg-[#8d7a69] text-[#F9F5F1] hover:bg-[#8d7a69]/90 flex items-center gap-2"
       >
         <Download className="w-4 h-4" />
         Export SVG

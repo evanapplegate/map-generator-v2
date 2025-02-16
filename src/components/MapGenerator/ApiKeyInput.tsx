@@ -16,7 +16,6 @@ const ApiKeyInput = ({ onApiKeyChange }: ApiKeyInputProps) => {
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="apiKey">Enter Claude API key</Label>
       <Input
         id="apiKey"
         type="password"

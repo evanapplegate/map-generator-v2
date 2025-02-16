@@ -132,16 +132,19 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F9F5F1] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900">
-            Map Generator
+        <div className="text-left mb-12">
+          <h1 className="text-4xl font-bold text-[#8d7a69]">
+            LLM + D3.js Map Generator
           </h1>
+          <p className="mt-4 text-lg text-[#8d7a69] max-w-3xl">
+            A cartography tool for designers by <a href="https://evanapplegate.com" className="text-[#4b331f] hover:text-[#6b4b2f] transition-colors underline underline-offset-4">Evan Applegate</a>. Give a sentence, get an Illustrator-editable SVG.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg">
+          <div className="lg:col-span-1 bg-[#F9F5F1] p-6 rounded-lg shadow-lg">
             <MapForm onSubmit={handleMapRequest} />
           </div>
           
@@ -149,8 +152,8 @@ const Index = () => {
             {isLoading ? (
               <div className="space-y-4">
                 {Array(2).fill(null).map((_, i) => (
-                  <div key={i} className="bg-white p-6 rounded-lg shadow-lg">
-                    <div className="text-center mb-4 text-lg font-semibold text-gray-600">
+                  <div key={i} className="bg-[#F9F5F1] p-6 rounded-lg shadow-lg">
+                    <div className="text-center mb-4 text-lg font-semibold text-[#8d7a69]">
                       Variation {i + 1}
                     </div>
                     <div className="h-[400px] w-full flex items-center justify-center bg-gray-50 rounded-lg">
@@ -164,8 +167,8 @@ const Index = () => {
             ) : mapVariations && (
               <div className="space-y-4">
                 {mapVariations.map((mapData, index) => (
-                  <div key={index} className={`map-visualization-${index} bg-white p-6 rounded-lg shadow-lg`}>
-                    <div className="text-center mb-4 text-lg font-semibold text-gray-600">
+                  <div key={index} className={`map-visualization-${index} bg-[#F9F5F1] p-6 rounded-lg shadow-lg`}>
+                    <div className="text-center mb-4 text-lg font-semibold text-[#8d7a69]">
                       Variation {index + 1}
                     </div>
                     <MapVisualization data={mapData} />

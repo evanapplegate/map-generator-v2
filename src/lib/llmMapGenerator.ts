@@ -27,6 +27,11 @@ FOR US MAPS (states):
     }
   }
 
+COLOR PREFERENCES:
+- Default fill color should be "#edded1" unless specified
+- Default border color should be "#ffffff"
+- Colors should be gentle pastels, relatively unsaturated but still diffentiable by uhhh whatever would look good in 1977 Sunset mag
+
 RESPOND ONLY WITH A VALID JSON OBJECT. NO OTHER TEXT OR FORMATTING.
 
 The JSON must follow this format:
